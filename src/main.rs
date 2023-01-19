@@ -4,6 +4,8 @@ use std::io;
 use std::process;
 mod error;
 mod expr;
+mod interpreter;
+mod object;
 mod parser;
 mod scanner;
 mod token;
