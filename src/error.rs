@@ -1,8 +1,14 @@
-pub use crate::token::TokenType;
+pub use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct ParserError {
     pub tokenType: TokenType,
+    pub message: String,
+}
+
+#[derive(Debug)]
+pub struct RuntimeError {
+    pub token: Token,
     pub message: String,
 }
 

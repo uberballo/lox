@@ -55,9 +55,11 @@ fn run(source: String) {
     let tokens = scanner.scan_tokens();
     println!("{:?}", tokens);
     let mut parser = parser::Parser::new(tokens);
+    let interpreter = interpreter::Interpreter {};
     let res = parser.parse();
     println!("{:?}", res);
     println!();
+    interpreter.interpret(res.unwrap());
 }
 
 fn error(line: u32, message: String) {

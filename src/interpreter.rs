@@ -13,27 +13,29 @@ impl Interpreter {
     //    return expr.accept(this)
     //}
 
-    //    @Override
-    //public Object visitUnaryExpr(Expr.Unary expr) {
-    //  Object right = evaluate(expr.right);
+    pub fn interpret(&self, expr: Expr) {
+        let res = match expr {
+            Expr::Binary {
+                left: _,
+                operator: _,
+                right: _,
+            } => self.visit_binary_expr(expr),
+            Expr::Unary {
+                operator: _,
+                right: _,
+            } => self.visit_unary_expr(expr),
+            Expr::Literal { literalValue: _ } => self.visit_literal_expr(expr),
+            _ => Object::Nil,
+        };
+        println!("{:?}", res);
+    }
 
-    //  switch (expr.operator.type) {
-    //case Bang:
-    //return !isTruthy(right)
-    //    case MINUS:
-    //      return -(double)right;
-    //  }
-
-    //  // Unreachable.
-    //  return null;
-    //}
-
-    fn is_truthy(object: Object) -> bool {
+    fn is_truthy(&self, object: Object) -> bool {
         match object {
             Nil => false,
             False => false,
             True => true,
-            _ => false,
+            _ => true,
         }
     }
 
@@ -135,6 +137,40 @@ impl Interpreter {
                     Object::Boolean(self.is_equal(left_value, right_value))
                 }
                 //TODO No string + string yet.
+                _ => Object::Nil,
+            },
+            _ => Object::Nil,
+        }
+    }
+
+    fn check_number_operand(&self, operator: Token, operand: &Object) {
+        match operand {
+            Object::Number(_) => println!("No problem"),
+            _ => println!("Error!"),
+        }
+    }
+
+    fn check_number_operands(&self, operator: Token, left: &Object, right: &Object) {
+        match (left, right) {
+            (Object::Number(_), Object::Number(_)) => println!("No problem"),
+            _ => println!("Error!"),
+        }
+    }
+
+    fn visit_unary_expr(&self, expr: Expr) -> Object {
+        match expr {
+            Expr::Unary {
+                operator: operator,
+                right: right,
+            } => match operator.tokenType {
+                TokenType::Bang => {
+                    Object::Boolean(!self.is_truthy(self.visit_literal_expr(*right)))
+                }
+                TokenType::Minus => {
+                    let object = self.visit_literal_expr(*right);
+                    self.check_number_operand(operator, &object);
+                    Object::Number(-self.object_number(object))
+                }
                 _ => Object::Nil,
             },
             _ => Object::Nil,

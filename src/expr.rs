@@ -1,7 +1,7 @@
 pub use crate::token::Token;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Binary {
         //Box because otherwise it has infinite size.
@@ -21,7 +21,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LiteralValue {
     Number(f64),
     String(String),
