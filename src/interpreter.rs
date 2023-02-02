@@ -1,8 +1,12 @@
-pub use crate::expr::{Expr, LiteralValue};
+pub use crate::environment::Environment;
+pub use crate::error::RuntimeError;
+pub use crate::expr::{Expr, LiteralValue, Stmt};
 pub use crate::object::Object;
 pub use crate::token::{Token, TokenType};
 
-pub struct Interpreter {}
+pub struct Interpreter {
+    pub environment: Environment,
+}
 
 impl Interpreter {
     //pub fn visit_grouping_expr(expr: Expr) {
@@ -12,22 +16,46 @@ impl Interpreter {
     //fn evaluate(expr Expr) -> object {
     //    return expr.accept(this)
     //}
+    pub fn interpret_stmt(&mut self, statements: Vec<Stmt>) {
+        for stmt in statements.into_iter() {
+            match stmt {
+                Stmt {
+                    expression: Some(_),
+                    print: None,
+                    var: None,
+                } => self.visit_expression_stmt(stmt),
+                Stmt {
+                    expression: None,
+                    print: Some(_),
+                    var: None,
+                } => self.visit_print_stmt(stmt),
+                Stmt {
+                    expression: None,
+                    print: None,
+                    var: Some(_),
+                } => self.visit_var_stmt(stmt),
+                _ => println!("Invalid statement"),
+            }
+        }
+    }
 
-    pub fn interpret(&self, expr: Expr) {
-        let res = match expr {
+    pub fn interpret(&mut self, expr: Expr) -> Result<Object, RuntimeError> {
+        match expr {
             Expr::Binary {
                 left: _,
                 operator: _,
                 right: _,
-            } => self.visit_binary_expr(expr),
+            } => Ok(self.visit_binary_expr(expr)),
             Expr::Unary {
                 operator: _,
                 right: _,
-            } => self.visit_unary_expr(expr),
-            Expr::Literal { literalValue: _ } => self.visit_literal_expr(expr),
-            _ => Object::Nil,
-        };
-        println!("{:?}", res);
+            } => Ok(self.visit_unary_expr(expr)),
+            Expr::Literal { literal_value: _ } => Ok(self.visit_literal_expr(expr)),
+            //TODO remove unwrap
+            Expr::Variable { token: _ } => self.visit_var_expr(expr),
+            Expr::Assign { name: _, value: _ } => self.visit_assign_expr(expr),
+            _ => Ok(Object::Nil),
+        }
     }
 
     fn is_truthy(&self, object: Object) -> bool {
@@ -43,8 +71,8 @@ impl Interpreter {
     //    return expr.value;
     //  }
 
-    fn literal_to_object(&self, literalValue: LiteralValue) -> Object {
-        match literalValue {
+    fn literal_to_object(&self, literal_value: LiteralValue) -> Object {
+        match literal_value {
             LiteralValue::Number(x) => Object::Number(x),
             LiteralValue::String(x) => Object::String(x),
             LiteralValue::Boolean(x) => Object::Boolean(x),
@@ -55,7 +83,7 @@ impl Interpreter {
     fn visit_literal_expr(&self, expr: Expr) -> Object {
         match expr {
             Expr::Literal {
-                literalValue: value,
+                literal_value: value,
             } => self.literal_to_object(value),
             _ => Object::Nil,
         }
@@ -174,6 +202,61 @@ impl Interpreter {
                 _ => Object::Nil,
             },
             _ => Object::Nil,
+        }
+    }
+
+    fn visit_expression_stmt(&mut self, stmt: Stmt) {
+        println!("expression");
+        let object: Option<Result<Object, RuntimeError>> = match stmt.expression {
+            Some(expr) => Some(self.interpret(expr)),
+            _ => None,
+        };
+    }
+
+    fn visit_print_stmt(&mut self, stmt: Stmt) {
+        println!("print");
+        match stmt.print {
+            Some(expr) => println!("Printing: {:?}", self.interpret(expr).unwrap_or_default()),
+            None => println!("None"),
+        };
+    }
+
+    fn visit_var_stmt(&mut self, stmt: Stmt) {
+        match stmt.var {
+            Some(var) => {
+                let value = match var.initializer {
+                    Some(initializer) => self.interpret(initializer),
+                    None => Ok(Object::Nil),
+                };
+                match value {
+                    Err(e) => panic!("{:?}", e),
+                    Ok(value) => self.environment.define(var.name.lexeme, value),
+                }
+            }
+            None => println!("None"),
+        };
+    }
+
+    fn visit_var_expr(&self, expr: Expr) -> Result<Object, RuntimeError> {
+        match expr {
+            Expr::Variable { token } => return self.environment.get(token),
+            _ => panic!("Not here! Error"),
+        }
+    }
+
+    fn visit_assign_expr(&mut self, expr: Expr) -> Result<Object, RuntimeError> {
+        match expr {
+            Expr::Assign { name, value } => {
+                let new_value = self.interpret(*value);
+                match new_value {
+                    Ok(obj) => {
+                        self.environment.assign(name, obj.clone());
+                        return Ok(obj);
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+            _ => panic!("Not here! error visiting assign expression"),
         }
     }
 }

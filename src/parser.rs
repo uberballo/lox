@@ -1,5 +1,5 @@
 pub use crate::error::ParserError;
-pub use crate::expr::{Expr, LiteralValue};
+pub use crate::expr::{Expr, LiteralValue, Stmt, Var};
 pub use crate::token::{Token, TokenType};
 
 pub struct Parser {
@@ -26,13 +26,125 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParserError> {
-        return self.expression();
+    //pub fn parse(&mut self) -> Result<Expr, ParserError> {
+    pub fn parse(&mut self) -> Vec<Stmt> {
+        let mut statements: Vec<Stmt> = Vec::new();
+        while (!self.is_at_end()) {
+            match self.declaration() {
+                Ok(stmt) => statements.push(stmt),
+                Err(err) => println!("{:?}", err),
+            }
+        }
+        //return self.expression();
+        return statements;
         // catch ParseEerror return null
     }
 
+    fn declaration(&mut self) -> Result<Stmt, ParserError> {
+        if matches!(self, TokenType::Var) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.".to_string())?;
+
+        if matches!(self, TokenType::Equal) {
+            match self.expression() {
+                Err(err) => return Err(err),
+                Ok(expr) => {
+                    self.consume(TokenType::Semicolon, "Expect variable name.".to_string())?;
+                    return Ok(Stmt {
+                        expression: None,
+                        print: None,
+                        var: Some(Var {
+                            name: name,
+                            initializer: Some(expr),
+                        }),
+                    });
+                }
+            }
+        };
+        self.synchronize();
+        //TODO should return null
+        return Err(ParserError {
+            tokenType: self.peek().tokenType,
+            message: "bad broken".to_string(),
+        });
+    }
+
     fn expression(&mut self) -> Result<Expr, ParserError> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, ParserError> {
+        let mut expr: Expr = self.equality()?;
+
+        while matches!(self, TokenType::Equal) {
+            let equals = self.previous();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable { token } => {
+                    return Ok(Expr::Assign {
+                        name: token,
+                        value: Box::new(value),
+                    });
+                }
+                _ => {
+                    return Err(ParserError {
+                        tokenType: equals.tokenType,
+                        message: "Invalid assignment target".to_string(),
+                    });
+                }
+            }
+        }
+        return Ok(expr);
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParserError> {
+        if matches!(self, TokenType::Print) {
+            return self.print_statement();
+        }
+        return self.expression_statement();
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParserError> {
+        let value = self.expression();
+        match value {
+            Err(err) => return Err(err),
+            Ok(expr) => {
+                let a = self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+
+                return Ok(Stmt {
+                    expression: None,
+                    print: Some(expr),
+                    var: None,
+                });
+            }
+        }
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
+        let value = self.expression();
+        match value {
+            Err(err) => {
+                return Err(ParserError {
+                    tokenType: self.peek().tokenType,
+                    message: "error".to_string(),
+                })
+            }
+            Ok(expr) => {
+                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+                return Ok(Stmt {
+                    expression: Some(expr),
+                    print: None,
+                    var: None,
+                });
+            }
+        }
     }
 
     fn equality(&mut self) -> Result<Expr, ParserError> {
@@ -72,7 +184,6 @@ impl Parser {
 
     fn term(&mut self) -> Result<Expr, ParserError> {
         let mut expr: Expr = self.factor()?;
-        println!("here");
         while matches!(self, TokenType::Minus, TokenType::Plus) {
             let operator = self.previous();
             let right = self.factor()?;
@@ -115,19 +226,19 @@ impl Parser {
     fn primary(&mut self) -> Result<Expr, ParserError> {
         let expr = match self.peek().tokenType {
             TokenType::False => Expr::Literal {
-                literalValue: LiteralValue::Boolean(false),
+                literal_value: LiteralValue::Boolean(false),
             },
             TokenType::True => Expr::Literal {
-                literalValue: LiteralValue::Boolean(true),
+                literal_value: LiteralValue::Boolean(true),
             },
             TokenType::Nil => Expr::Literal {
-                literalValue: LiteralValue::Null,
+                literal_value: LiteralValue::Null,
             },
             TokenType::Number { literal } => Expr::Literal {
-                literalValue: LiteralValue::Number(literal),
+                literal_value: LiteralValue::Number(literal),
             },
             TokenType::String { literal } => Expr::Literal {
-                literalValue: LiteralValue::String(literal),
+                literal_value: LiteralValue::String(literal),
             },
             TokenType::LeftParen => {
                 let expr = self.expression()?;
@@ -139,11 +250,13 @@ impl Parser {
                     group: Box::new(expr),
                 }
             }
+            TokenType::Identifier => Expr::Variable { token: self.peek() },
             _ => {
+                self.advance();
                 return Err(ParserError {
                     tokenType: self.peek().tokenType,
                     message: "Expected valid expression".to_string(),
-                })
+                });
             }
         };
         self.advance();

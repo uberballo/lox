@@ -86,7 +86,7 @@ impl Scanner {
             '"' => self.string(),
             c if is_digit(c) => self.number(),
             c if is_alpha(c) => self.identifier(),
-            _ => println!("oh no"),
+            _ => println!("OH no, lexical error!"),
         }
     }
 
@@ -171,7 +171,8 @@ impl Scanner {
             .get(literal)
             .cloned()
             .unwrap_or(TokenType::Identifier);
-        self.add_token(TokenType::Identifier)
+
+        self.add_token(tokenType)
     }
 }
 

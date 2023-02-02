@@ -1,6 +1,7 @@
 pub use crate::token::Token;
 use std::fmt;
-
+// TODO implement some of the methods.
+// evaluate, accept, execute
 #[derive(Debug, Clone)]
 pub enum Expr {
     Binary {
@@ -14,7 +15,14 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Literal {
-        literalValue: LiteralValue,
+        literal_value: LiteralValue,
+    },
+    Variable {
+        token: Token,
+    },
+    Assign {
+        name: Token,
+        value: Box<Expr>,
     },
     Grouping {
         group: Box<Expr>,
@@ -32,4 +40,17 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+#[derive(Debug)]
+pub struct Var {
+    pub name: Token,
+    pub initializer: Option<Expr>,
+}
+
+#[derive(Debug)]
+pub struct Stmt {
+    pub expression: Option<Expr>,
+    pub print: Option<Expr>,
+    pub var: Option<Var>,
 }

@@ -10,6 +10,12 @@ pub enum Object {
     False,
 }
 
+impl Default for Object {
+    fn default() -> Self {
+        Object::Nil
+    }
+}
+
 impl<'a> fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
