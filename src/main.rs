@@ -61,14 +61,19 @@ impl Lox {
     fn run(&mut self, source: String) {
         //scanner
         let mut scanner = scanner::Scanner::new(source);
-        let tokens = scanner.scan_tokens();
+        let mut tokens = scanner.scan_tokens();
         println!();
-        println!("{:?}", tokens);
+        for tk in &mut tokens {
+            println!("{:?}", tk);
+        }
         println!();
         let mut parser = parser::Parser::new(tokens);
-        let statements = parser.parse();
+        let mut statements = parser.parse();
+
         println!();
-        println!("{:?}", statements);
+        for st in &mut statements {
+            println!("{:?}", st);
+        }
         println!();
         self.interpreter.interpret_stmt(statements);
     }

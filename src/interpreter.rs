@@ -18,6 +18,7 @@ impl Interpreter {
     //}
     pub fn interpret_stmt(&mut self, statements: Vec<Stmt>) {
         for stmt in statements.into_iter() {
+            println!("{:?}", stmt);
             match stmt {
                 Stmt {
                     expression: Some(_),
@@ -107,66 +108,66 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary_expr(&self, expr: Expr) -> Object {
+    fn visit_binary_expr(&mut self, expr: Expr) -> Object {
         match expr {
             Expr::Binary {
                 left: left,
                 operator: operator,
                 right: right,
-            } => match operator.tokenType {
-                TokenType::Minus => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Number(left_value - right_value)
+            } => {
+                let left_value: Object = self.interpret(*left).unwrap();
+                let right_value: Object = self.interpret(*right).unwrap();
+                match operator.tokenType {
+                    TokenType::Minus => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Number(left_number - right_number);
+                    }
+                    TokenType::Plus => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Number(left_number + right_number);
+                    }
+                    TokenType::Slash => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Number(left_number / right_number);
+                    }
+                    TokenType::Star => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Number(left_number * right_number);
+                    }
+                    TokenType::Greater => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Boolean(left_number > right_number);
+                    }
+                    TokenType::GreaterEqual => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Boolean(left_number >= right_number);
+                    }
+                    TokenType::Less => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Boolean(left_number < right_number);
+                    }
+                    TokenType::LessEqual => {
+                        let left_number = self.object_number(left_value);
+                        let right_number = self.object_number(right_value);
+                        return Object::Boolean(left_number <= right_number);
+                    }
+                    TokenType::BangEqual => {
+                        return Object::Boolean(!self.is_equal(left_value, right_value));
+                    }
+                    TokenType::EqualEqual => {
+                        return Object::Boolean(self.is_equal(left_value, right_value));
+                    }
+                    //TODO No string + string yet.
+                    _ => return Object::Nil,
                 }
-                TokenType::Plus => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Number(left_value + right_value)
-                }
-                TokenType::Slash => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Number(left_value / right_value)
-                }
-                TokenType::Star => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Number(left_value * right_value)
-                }
-                TokenType::Greater => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Boolean(left_value > right_value)
-                }
-                TokenType::GreaterEqual => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Boolean(left_value >= right_value)
-                }
-                TokenType::Less => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Boolean(left_value < right_value)
-                }
-                TokenType::LessEqual => {
-                    let left_value = self.object_number(self.visit_literal_expr(*left));
-                    let right_value = self.object_number(self.visit_literal_expr(*right));
-                    Object::Boolean(left_value <= right_value)
-                }
-                TokenType::BangEqual => {
-                    let left_value = self.visit_literal_expr(*left);
-                    let right_value = self.visit_literal_expr(*right);
-                    Object::Boolean(!self.is_equal(left_value, right_value))
-                }
-                TokenType::EqualEqual => {
-                    let left_value = self.visit_literal_expr(*left);
-                    let right_value = self.visit_literal_expr(*right);
-                    Object::Boolean(self.is_equal(left_value, right_value))
-                }
-                //TODO No string + string yet.
-                _ => Object::Nil,
-            },
+            }
             _ => Object::Nil,
         }
     }
