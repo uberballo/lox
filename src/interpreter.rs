@@ -18,23 +18,32 @@ impl Interpreter {
     //}
     pub fn interpret_stmt(&mut self, statements: Vec<Stmt>) {
         for stmt in statements.into_iter() {
-            println!("{:?}", stmt);
+            //TODO This is really stupid. Add the enum
             match stmt {
                 Stmt {
                     expression: Some(_),
                     print: None,
                     var: None,
+                    block: None,
                 } => self.visit_expression_stmt(stmt),
                 Stmt {
                     expression: None,
                     print: Some(_),
                     var: None,
+                    block: None,
                 } => self.visit_print_stmt(stmt),
                 Stmt {
                     expression: None,
                     print: None,
                     var: Some(_),
+                    block: None,
                 } => self.visit_var_stmt(stmt),
+                Stmt {
+                    expression: None,
+                    print: None,
+                    var: None,
+                    block: Some(_),
+                } => self.visit_block_stmt(stmt),
                 _ => println!("Invalid statement"),
             }
         }
@@ -215,7 +224,6 @@ impl Interpreter {
     }
 
     fn visit_print_stmt(&mut self, stmt: Stmt) {
-        println!("print");
         match stmt.print {
             Some(expr) => println!("Printing: {:?}", self.interpret(expr).unwrap_or_default()),
             None => println!("None"),
@@ -236,6 +244,22 @@ impl Interpreter {
             }
             None => println!("None"),
         };
+    }
+
+    fn visit_block_stmt(&mut self, stmt: Stmt) {
+        match stmt.block {
+            Some(statements) => self.execute_block(statements),
+            _ => println!("None!"),
+        }
+    }
+
+    fn execute_block(&mut self, statements: Vec<Stmt>) {
+        //Store previous environment
+        let previous = self.environment.clone();
+        //self.environment = environment;
+        self.interpret_stmt(statements);
+        //Set the environment back to previous one.
+        self.environment = previous;
     }
 
     fn visit_var_expr(&self, expr: Expr) -> Result<Object, RuntimeError> {

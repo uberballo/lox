@@ -48,9 +48,11 @@ pub struct Var {
     pub initializer: Option<Expr>,
 }
 
+//TODO update to enums
 #[derive(Debug)]
 pub struct Stmt {
     pub expression: Option<Expr>,
     pub print: Option<Expr>,
     pub var: Option<Var>,
+    pub block: Option<Vec<Stmt>>,
 }

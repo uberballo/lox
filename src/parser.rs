@@ -63,6 +63,7 @@ impl Parser {
                             name: name,
                             initializer: Some(expr),
                         }),
+                        block: None,
                     });
                 }
             }
@@ -108,6 +109,9 @@ impl Parser {
         if matches!(self, TokenType::Print) {
             return self.print_statement();
         }
+        if matches!(self, TokenType::LeftBrace) {
+            return self.block_statement();
+        }
         return self.expression_statement();
     }
 
@@ -122,6 +126,7 @@ impl Parser {
                     expression: None,
                     print: Some(expr),
                     var: None,
+                    block: None,
                 });
             }
         }
@@ -142,9 +147,26 @@ impl Parser {
                     expression: Some(expr),
                     print: None,
                     var: None,
+                    block: None,
                 });
             }
         }
+    }
+
+    fn block_statement(&mut self) -> Result<Stmt, ParserError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while (!self.check(TokenType::RightBrace) && !self.is_at_end()) {
+            let stmt = self.declaration()?;
+            statements.push(stmt);
+        }
+        self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string());
+        return Ok(Stmt {
+            expression: None,
+            print: None,
+            var: None,
+            block: Some(statements),
+        });
     }
 
     fn equality(&mut self) -> Result<Expr, ParserError> {
