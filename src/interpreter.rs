@@ -70,9 +70,9 @@ impl Interpreter {
 
     fn is_truthy(&self, object: Object) -> bool {
         match object {
-            _False => false,
-            _True => true,
-            _Nil => false,
+            Object::False => false,
+            Object::True => true,
+            Object::Nil => false,
             _ => unreachable!(),
         }
     }
@@ -275,7 +275,7 @@ impl Interpreter {
                 let new_value = self.interpret(*value);
                 match new_value {
                     Ok(obj) => {
-                        self.environment.assign(name, obj.clone());
+                        self.environment.assign(name, obj.clone())?;
                         return Ok(obj);
                     }
                     Err(e) => return Err(e),

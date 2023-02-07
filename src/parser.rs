@@ -142,7 +142,7 @@ impl Parser {
                 })
             }
             Ok(expr) => {
-                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
                 return Ok(Stmt {
                     expression: Some(expr),
                     print: None,
@@ -160,7 +160,7 @@ impl Parser {
             let stmt = self.declaration()?;
             statements.push(stmt);
         }
-        self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string());
+        self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string())?;
         return Ok(Stmt {
             expression: None,
             print: None,
@@ -267,7 +267,7 @@ impl Parser {
                 self.consume(
                     TokenType::RightParen,
                     "Expect ')' after expression.".to_string(),
-                );
+                )?;
                 Expr::Grouping {
                     group: Box::new(expr),
                 }

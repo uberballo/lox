@@ -97,10 +97,10 @@ impl Scanner {
     }
 
     fn add_token(&mut self, token_type: TokenType) {
-        let subString = self.source[self.start..self.current].to_string();
+        let sub_string = self.source[self.start..self.current].to_string();
         self.tokens.push(Token {
             token_type,
-            lexeme: subString,
+            lexeme: sub_string,
             line: self.line,
         })
     }
