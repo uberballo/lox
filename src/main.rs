@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use std::fs;
 use std::io;
@@ -11,8 +10,6 @@ mod object;
 mod parser;
 mod scanner;
 mod token;
-
-static mut HAD_ERROR: bool = false;
 
 fn main() {
     let mut pattern = std::env::args();
@@ -77,14 +74,5 @@ impl Lox {
         }
         println!();
         self.interpreter.interpret_stmt(statements);
-    }
-
-    fn error(&self, line: u32, message: String) {
-        self.report(line, "".to_string(), message);
-    }
-
-    fn report(&self, line: u32, location: String, message: String) {
-        println!("[line: {}] error {}: {}", line, location, message);
-        //HAD_ERROR = true;
     }
 }

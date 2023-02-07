@@ -18,10 +18,6 @@ impl Environment {
         }
     }
 
-    pub fn add_enclosing(&mut self, environment: Environment) {
-        self.enclosing = Some(Box::new(environment));
-    }
-
     pub fn define(&mut self, name: String, value: Object) {
         self.values.insert(name, value);
     }

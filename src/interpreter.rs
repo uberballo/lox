@@ -128,11 +128,13 @@ impl Interpreter {
                 let right_value: Object = self.interpret(*right).unwrap();
                 match operator.token_type {
                     TokenType::Minus => {
+                        self.check_number_operands(operator, &left_value, &right_value);
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
                         return Object::Number(left_number - right_number);
                     }
                     TokenType::Plus => {
+                        self.check_number_operands(operator, &left_value, &right_value);
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
                         return Object::Number(left_number + right_number);
@@ -183,15 +185,16 @@ impl Interpreter {
 
     fn check_number_operand(&self, _operator: Token, operand: &Object) {
         match operand {
-            Object::Number(_) => println!("No problem"),
+            Object::Number(_) => (),
             _ => println!("Error!"),
         }
     }
 
-    fn check_number_operands(&self, _operator: Token, left: &Object, right: &Object) {
+    //Not the best.
+    fn check_number_operands(&self, operator: Token, left: &Object, right: &Object) {
         match (left, right) {
-            (Object::Number(_), Object::Number(_)) => println!("No problem"),
-            _ => println!("Error!"),
+            (Object::Number(_), Object::Number(_)) => (),
+            _ => println!("Error! {:?}",operator),
         }
     }
 
