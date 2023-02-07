@@ -29,7 +29,7 @@ impl Parser {
     //pub fn parse(&mut self) -> Result<Expr, ParserError> {
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut statements: Vec<Stmt> = Vec::new();
-        while (!self.is_at_end()) {
+        while !self.is_at_end() {
             match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(err) => println!("{:?}", err),
@@ -81,7 +81,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
-        let mut expr: Expr = self.equality()?;
+        let expr: Expr = self.equality()?;
 
         while matches!(self, TokenType::Equal) {
             let equals = self.previous();
@@ -120,7 +120,7 @@ impl Parser {
         match value {
             Err(err) => return Err(err),
             Ok(expr) => {
-                let a = self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+                let _a = self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
 
                 return Ok(Stmt {
                     expression: None,
@@ -135,7 +135,7 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
         let value = self.expression();
         match value {
-            Err(err) => {
+            Err(_err) => {
                 return Err(ParserError {
                     token_type: self.peek().token_type,
                     message: "error".to_string(),
@@ -156,7 +156,7 @@ impl Parser {
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
-        while (!self.check(TokenType::RightBrace) && !self.is_at_end()) {
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
             let stmt = self.declaration()?;
             statements.push(stmt);
         }

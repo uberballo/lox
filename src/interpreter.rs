@@ -70,10 +70,10 @@ impl Interpreter {
 
     fn is_truthy(&self, object: Object) -> bool {
         match object {
-            Nil => false,
-            False => false,
-            True => true,
-            _ => true,
+            _False => false,
+            _True => true,
+            _Nil => false,
+            _ => unreachable!(),
         }
     }
 
@@ -120,9 +120,9 @@ impl Interpreter {
     fn visit_binary_expr(&mut self, expr: Expr) -> Object {
         match expr {
             Expr::Binary {
-                left: left,
-                operator: operator,
-                right: right,
+                left,
+                operator,
+                right,
             } => {
                 let left_value: Object = self.interpret(*left).unwrap();
                 let right_value: Object = self.interpret(*right).unwrap();
@@ -181,14 +181,14 @@ impl Interpreter {
         }
     }
 
-    fn check_number_operand(&self, operator: Token, operand: &Object) {
+    fn check_number_operand(&self, _operator: Token, operand: &Object) {
         match operand {
             Object::Number(_) => println!("No problem"),
             _ => println!("Error!"),
         }
     }
 
-    fn check_number_operands(&self, operator: Token, left: &Object, right: &Object) {
+    fn check_number_operands(&self, _operator: Token, left: &Object, right: &Object) {
         match (left, right) {
             (Object::Number(_), Object::Number(_)) => println!("No problem"),
             _ => println!("Error!"),
@@ -198,8 +198,8 @@ impl Interpreter {
     fn visit_unary_expr(&self, expr: Expr) -> Object {
         match expr {
             Expr::Unary {
-                operator: operator,
-                right: right,
+                operator,
+                right,
             } => match operator.token_type {
                 TokenType::Bang => {
                     Object::Boolean(!self.is_truthy(self.visit_literal_expr(*right)))
@@ -217,7 +217,7 @@ impl Interpreter {
 
     fn visit_expression_stmt(&mut self, stmt: Stmt) {
         println!("expression");
-        let object: Option<Result<Object, RuntimeError>> = match stmt.expression {
+        let _object: Option<Result<Object, RuntimeError>> = match stmt.expression {
             Some(expr) => Some(self.interpret(expr)),
             _ => None,
         };
