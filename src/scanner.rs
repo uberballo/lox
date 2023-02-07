@@ -49,7 +49,7 @@ impl Scanner {
             self.scan_token();
         }
         let tok = Token {
-            tokenType: TokenType::Eof,
+            token_type: TokenType::Eof,
             lexeme: "".to_string(),
             line: self.line,
         };
@@ -96,10 +96,10 @@ impl Scanner {
         return character;
     }
 
-    fn add_token(&mut self, tokenType: TokenType) {
+    fn add_token(&mut self, token_type: TokenType) {
         let subString = self.source[self.start..self.current].to_string();
         self.tokens.push(Token {
-            tokenType,
+            token_type,
             lexeme: subString,
             line: self.line,
         })
@@ -166,13 +166,13 @@ impl Scanner {
             self.advance();
         }
         let literal = &self.source[self.start..self.current];
-        let tokenType: TokenType = self
+        let token_type: TokenType = self
             .keywords
             .get(literal)
             .cloned()
             .unwrap_or(TokenType::Identifier);
 
-        self.add_token(tokenType)
+        self.add_token(token_type)
     }
 }
 

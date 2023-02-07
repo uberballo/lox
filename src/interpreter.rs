@@ -126,7 +126,7 @@ impl Interpreter {
             } => {
                 let left_value: Object = self.interpret(*left).unwrap();
                 let right_value: Object = self.interpret(*right).unwrap();
-                match operator.tokenType {
+                match operator.token_type {
                     TokenType::Minus => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
@@ -200,7 +200,7 @@ impl Interpreter {
             Expr::Unary {
                 operator: operator,
                 right: right,
-            } => match operator.tokenType {
+            } => match operator.token_type {
                 TokenType::Bang => {
                     Object::Boolean(!self.is_truthy(self.visit_literal_expr(*right)))
                 }
