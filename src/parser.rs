@@ -1,5 +1,5 @@
 pub use crate::error::ParserError;
-pub use crate::expr::{Expr, IfStmt, LiteralValue, Stmt, Var};
+pub use crate::expr::{Expr, IfStmt, LiteralValue, Stmt, Var, WhileStmt};
 pub use crate::token::{Token, TokenType};
 
 pub struct Parser {
@@ -65,6 +65,7 @@ impl Parser {
                         }),
                         block: None,
                         ifStmt: None,
+                        whileStmt: None,
                     });
                 }
             }
@@ -143,10 +144,31 @@ impl Parser {
         if matches!(self, TokenType::Print) {
             return self.print_statement();
         }
+        if matches!(self, TokenType::While) {
+            return self.while_statement();
+        }
         if matches!(self, TokenType::LeftBrace) {
             return self.block_statement();
         }
         return self.expression_statement();
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.".to_string())?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after 'if'.".to_string())?;
+        let body = self.statement()?;
+        return Ok(Stmt {
+            expression: None,
+            print: None,
+            var: None,
+            block: None,
+            ifStmt: None,
+            whileStmt: Some(WhileStmt {
+                condition: Box::new(condition),
+                body: Box::new(body),
+            }),
+        });
     }
 
     fn if_statement(&mut self) -> Result<Stmt, ParserError> {
@@ -172,6 +194,7 @@ impl Parser {
                         thenBranch: Box::new(then_branch),
                         elseBranch: else_branch,
                     }),
+                    whileStmt: None,
                 });
             }
         }
@@ -190,6 +213,7 @@ impl Parser {
                     var: None,
                     block: None,
                     ifStmt: None,
+                    whileStmt: None,
                 });
             }
         }
@@ -212,6 +236,7 @@ impl Parser {
                     var: None,
                     block: None,
                     ifStmt: None,
+                    whileStmt: None,
                 });
             }
         }
@@ -231,6 +256,7 @@ impl Parser {
             var: None,
             block: Some(statements),
             ifStmt: None,
+            whileStmt: None,
         });
     }
 

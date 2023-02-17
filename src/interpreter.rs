@@ -26,6 +26,7 @@ impl Interpreter {
                 var: None,
                 block: None,
                 ifStmt: None,
+                whileStmt: None,
             } => self.visit_expression_stmt(stmt),
             Stmt {
                 expression: None,
@@ -33,6 +34,7 @@ impl Interpreter {
                 var: None,
                 block: None,
                 ifStmt: None,
+                whileStmt: None,
             } => self.visit_print_stmt(stmt),
             Stmt {
                 expression: None,
@@ -40,6 +42,7 @@ impl Interpreter {
                 var: Some(_),
                 block: None,
                 ifStmt: None,
+                whileStmt: None,
             } => self.visit_var_stmt(stmt),
             Stmt {
                 expression: None,
@@ -47,6 +50,7 @@ impl Interpreter {
                 var: None,
                 block: Some(_),
                 ifStmt: None,
+                whileStmt: None,
             } => self.visit_block_stmt(stmt),
             Stmt {
                 expression: None,
@@ -54,7 +58,17 @@ impl Interpreter {
                 var: None,
                 block: None,
                 ifStmt: Some(_),
+                whileStmt: None,
             } => self.visit_if_stmt(stmt),
+            Stmt {
+                expression: None,
+                print: None,
+                var: None,
+                block: None,
+                ifStmt: None,
+                whileStmt: Some(_),
+            } => self.visit_while_stmt(stmt),
+
             _ => println!("Invalid statement"),
         }
     }
@@ -304,6 +318,20 @@ impl Interpreter {
         match stmt.block {
             Some(statements) => self.execute_block(statements),
             _ => println!("None!"),
+        }
+    }
+    // TODO fix this
+    fn visit_while_stmt(&mut self, stmt: Stmt) {
+        match stmt.whileStmt {
+            Some(whileStmt) => {
+                let condition = *whileStmt.condition.clone();
+                let mut value = self.interpret(*whileStmt.condition).unwrap();
+                while self.is_truthy_2(&value) {
+                    self.interpret_stmt(*whileStmt.body.clone());
+                    value = self.interpret(condition.clone()).unwrap();
+                }
+            }
+            _ => unreachable!(),
         }
     }
 

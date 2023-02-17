@@ -47,26 +47,33 @@ impl fmt::Display for Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Var {
     pub name: Token,
     pub initializer: Option<Expr>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfStmt {
     pub condition: Box<Expr>,
     pub thenBranch: Box<Stmt>,
     pub elseBranch: Option<Box<Stmt>>,
 }
 
+#[derive(Debug, Clone)]
+pub struct WhileStmt {
+    pub condition: Box<Expr>,
+    pub body: Box<Stmt>,
+}
+
 //TODO update to enums
 //SOON
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Stmt {
     pub expression: Option<Expr>,
     pub print: Option<Expr>,
     pub var: Option<Var>,
     pub block: Option<Vec<Stmt>>,
     pub ifStmt: Option<IfStmt>,
+    pub whileStmt: Option<WhileStmt>,
 }
