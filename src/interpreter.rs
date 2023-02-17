@@ -174,19 +174,21 @@ impl Interpreter {
     fn visit_binary_expr(&mut self, expr: Expr) -> Object {
         match expr {
             Expr::Binary {
-                left: left,
-                operator: operator,
-                right: right,
+                left,
+                operator,
+                right,
             } => {
                 let left_value: Object = self.interpret(*left).unwrap();
                 let right_value: Object = self.interpret(*right).unwrap();
-                match operator.tokenType {
+                match operator.token_type {
                     TokenType::Minus => {
+                        self.check_number_operands(operator, &left_value, &right_value);
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
                         return Object::Number(left_number - right_number);
                     }
                     TokenType::Plus => {
+                        self.check_number_operands(operator, &left_value, &right_value);
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
                         return Object::Number(left_number + right_number);
@@ -235,26 +237,24 @@ impl Interpreter {
         }
     }
 
-    fn check_number_operand(&self, operator: Token, operand: &Object) {
+    fn check_number_operand(&self, _operator: Token, operand: &Object) {
         match operand {
-            Object::Number(_) => println!("No problem"),
+            Object::Number(_) => (),
             _ => println!("Error!"),
         }
     }
 
+    //Not the best.
     fn check_number_operands(&self, operator: Token, left: &Object, right: &Object) {
         match (left, right) {
-            (Object::Number(_), Object::Number(_)) => println!("No problem"),
-            _ => println!("Error!"),
+            (Object::Number(_), Object::Number(_)) => (),
+            _ => println!("Error! {:?}", operator),
         }
     }
 
     fn visit_unary_expr(&self, expr: Expr) -> Object {
         match expr {
-            Expr::Unary {
-                operator: operator,
-                right: right,
-            } => match operator.tokenType {
+            Expr::Unary { operator, right } => match operator.token_type {
                 TokenType::Bang => {
                     Object::Boolean(!self.is_truthy(self.visit_literal_expr(*right)))
                 }
@@ -271,7 +271,7 @@ impl Interpreter {
 
     fn visit_expression_stmt(&mut self, stmt: Stmt) {
         println!("expression");
-        let object: Option<Result<Object, RuntimeError>> = match stmt.expression {
+        let _object: Option<Result<Object, RuntimeError>> = match stmt.expression {
             Some(expr) => Some(self.interpret(expr)),
             _ => None,
         };
@@ -329,7 +329,7 @@ impl Interpreter {
                 let new_value = self.interpret(*value);
                 match new_value {
                     Ok(obj) => {
-                        self.environment.assign(name, obj.clone());
+                        self.environment.assign(name, obj.clone())?;
                         return Ok(obj);
                     }
                     Err(e) => return Err(e),

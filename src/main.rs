@@ -1,7 +1,7 @@
-use std::env;
+
 use std::fs;
 use std::io;
-use std::process;
+
 mod environment;
 mod error;
 mod expr;
@@ -11,17 +11,15 @@ mod parser;
 mod scanner;
 mod token;
 
-static mut HAD_ERROR: bool = false;
-
 fn main() {
     let mut pattern = std::env::args();
-    let mut environment = environment::Environment::new();
-    let mut interpreter = interpreter::Interpreter { environment };
+    let environment = environment::Environment::new();
+    let interpreter = interpreter::Interpreter { environment };
     let mut lox = Lox { interpreter };
 
     match pattern.len() {
         1 => lox.run_prompt(),
-        2 => lox.runFile(pattern.nth(1).clone().expect("error")),
+        2 => lox.run_file(pattern.nth(1).clone().expect("error")),
         _ => println!("Invalid arguments"),
     }
 }
@@ -30,7 +28,7 @@ struct Lox {
 }
 
 impl Lox {
-    pub fn runFile(&mut self, path: String) {
+    pub fn run_file(&mut self, path: String) {
         let contents = fs::read_to_string(path).expect("no file found");
 
         self.run(contents);
@@ -76,14 +74,5 @@ impl Lox {
         }
         println!();
         self.interpreter.interpret_stmts(statements);
-    }
-
-    fn error(&self, line: u32, message: String) {
-        self.report(line, "".to_string(), message);
-    }
-
-    fn report(&self, line: u32, location: String, message: String) {
-        println!("[line: {}] error {}: {}", line, location, message);
-        //HAD_ERROR = true;
     }
 }

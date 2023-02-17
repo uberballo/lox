@@ -29,7 +29,7 @@ impl Parser {
     //pub fn parse(&mut self) -> Result<Expr, ParserError> {
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut statements: Vec<Stmt> = Vec::new();
-        while (!self.is_at_end()) {
+        while !self.is_at_end() {
             match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(err) => println!("{:?}", err),
@@ -72,7 +72,7 @@ impl Parser {
         self.synchronize();
         //TODO should return null
         return Err(ParserError {
-            tokenType: self.peek().tokenType,
+            token_type: self.peek().token_type,
             message: "bad broken".to_string(),
         });
     }
@@ -97,7 +97,7 @@ impl Parser {
                 }
                 _ => {
                     return Err(ParserError {
-                        tokenType: equals.tokenType,
+                        token_type: equals.token_type,
                         message: "Invalid assignment target".to_string(),
                     });
                 }
@@ -198,14 +198,14 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
         let value = self.expression();
         match value {
-            Err(err) => {
+            Err(_err) => {
                 return Err(ParserError {
-                    tokenType: self.peek().tokenType,
+                    token_type: self.peek().token_type,
                     message: "error".to_string(),
                 })
             }
             Ok(expr) => {
-                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
                 return Ok(Stmt {
                     expression: Some(expr),
                     print: None,
@@ -220,11 +220,11 @@ impl Parser {
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
-        while (!self.check(TokenType::RightBrace) && !self.is_at_end()) {
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
             let stmt = self.declaration()?;
             statements.push(stmt);
         }
-        self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string());
+        self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string())?;
         return Ok(Stmt {
             expression: None,
             print: None,
@@ -311,7 +311,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {
-        let expr = match self.peek().tokenType {
+        let expr = match self.peek().token_type {
             TokenType::False => Expr::Literal {
                 literal_value: LiteralValue::Boolean(false),
             },
@@ -332,7 +332,7 @@ impl Parser {
                 self.consume(
                     TokenType::RightParen,
                     "Expect ')' after expression.".to_string(),
-                );
+                )?;
                 Expr::Grouping {
                     group: Box::new(expr),
                 }
@@ -341,7 +341,7 @@ impl Parser {
             _ => {
                 self.advance();
                 return Err(ParserError {
-                    tokenType: self.peek().tokenType,
+                    token_type: self.peek().token_type,
                     message: "Expected valid expression".to_string(),
                 });
             }
@@ -350,11 +350,11 @@ impl Parser {
         Ok(expr)
     }
 
-    fn check(&self, tokenType: TokenType) -> bool {
+    fn check(&self, token_type: TokenType) -> bool {
         if self.is_at_end() {
             return false;
         }
-        self.peek().tokenType == tokenType
+        self.peek().token_type == token_type
     }
 
     fn advance(&mut self) -> Token {
@@ -365,7 +365,7 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool {
-        self.peek().tokenType == TokenType::Eof
+        self.peek().token_type == TokenType::Eof
     }
 
     fn peek(&self) -> Token {
@@ -379,12 +379,12 @@ impl Parser {
             .expect("No previous")
     }
 
-    fn consume(&mut self, tokenType: TokenType, message: String) -> Result<Token, ParserError> {
-        if self.check(tokenType) {
+    fn consume(&mut self, token_type: TokenType, message: String) -> Result<Token, ParserError> {
+        if self.check(token_type) {
             return Ok(self.advance().clone());
         } else {
             return Err(ParserError {
-                tokenType: self.peek().tokenType,
+                token_type: self.peek().token_type,
                 message,
             });
         }
@@ -394,10 +394,10 @@ impl Parser {
         self.advance();
 
         while !self.is_at_end() {
-            if self.previous().tokenType == TokenType::Semicolon {
+            if self.previous().token_type == TokenType::Semicolon {
                 return;
             }
-            match self.peek().tokenType {
+            match self.peek().token_type {
                 TokenType::Class
                 | TokenType::Fun
                 | TokenType::Var

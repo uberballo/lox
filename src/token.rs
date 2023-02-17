@@ -52,13 +52,13 @@ pub enum TokenType {
 }
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub tokenType: TokenType,
+    pub token_type: TokenType,
     pub lexeme: String,
     pub line: usize,
 }
 
 impl<'a> fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({:?} {} )", self.tokenType, self.lexeme)
+        write!(f, "({:?} {} )", self.token_type, self.lexeme)
     }
 }

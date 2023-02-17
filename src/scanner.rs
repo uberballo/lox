@@ -44,12 +44,12 @@ impl Scanner {
     }
 
     pub fn scan_tokens(&mut self) -> Vec<Token> {
-        while (!self.is_at_end()) {
+        while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
         }
         let tok = Token {
-            tokenType: TokenType::Eof,
+            token_type: TokenType::Eof,
             lexeme: "".to_string(),
             line: self.line,
         };
@@ -96,11 +96,11 @@ impl Scanner {
         return character;
     }
 
-    fn add_token(&mut self, tokenType: TokenType) {
-        let subString = self.source[self.start..self.current].to_string();
+    fn add_token(&mut self, token_type: TokenType) {
+        let sub_string = self.source[self.start..self.current].to_string();
         self.tokens.push(Token {
-            tokenType,
-            lexeme: subString,
+            token_type,
+            lexeme: sub_string,
             line: self.line,
         })
     }
@@ -123,20 +123,20 @@ impl Scanner {
     }
 
     fn peek_next(&self) -> char {
-        if (self.current + 1 >= self.source.len()) {
+        if self.current + 1 >= self.source.len() {
             return '\0';
         }
         return self.source.chars().nth(self.current + 1).expect("shit");
     }
 
     fn string(&mut self) {
-        while (self.peek() != '"' && !self.is_at_end()) {
+        while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
             }
             self.advance();
         }
-        if (self.is_at_end()) {
+        if self.is_at_end() {
             println!("Errori!!");
             return;
         }
@@ -146,12 +146,12 @@ impl Scanner {
     }
 
     fn number(&mut self) {
-        while (is_digit(self.peek())) {
+        while is_digit(self.peek()) {
             self.advance();
         }
         if self.peek() == '.' && is_digit(self.peek_next()) {
             self.advance();
-            while (is_digit(self.peek())) {
+            while is_digit(self.peek()) {
                 self.advance();
             }
         }
@@ -162,17 +162,17 @@ impl Scanner {
     }
 
     fn identifier(&mut self) {
-        while (is_alpha_numeric(self.peek())) {
+        while is_alpha_numeric(self.peek()) {
             self.advance();
         }
         let literal = &self.source[self.start..self.current];
-        let tokenType: TokenType = self
+        let token_type: TokenType = self
             .keywords
             .get(literal)
             .cloned()
             .unwrap_or(TokenType::Identifier);
 
-        self.add_token(tokenType)
+        self.add_token(token_type)
     }
 }
 
