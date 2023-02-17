@@ -75,7 +75,7 @@ impl Lox {
             println!("{:?}", st);
         }
         println!();
-        self.interpreter.interpret_stmt(statements);
+        self.interpreter.interpret_stmts(statements);
     }
 
     fn error(&self, line: u32, message: String) {

@@ -16,36 +16,53 @@ impl Interpreter {
     //fn evaluate(expr Expr) -> object {
     //    return expr.accept(this)
     //}
-    pub fn interpret_stmt(&mut self, statements: Vec<Stmt>) {
+
+    // Really refactor this
+    fn interpret_stmt(&mut self, stmt: Stmt) {
+        match stmt {
+            Stmt {
+                expression: Some(_),
+                print: None,
+                var: None,
+                block: None,
+                ifStmt: None,
+            } => self.visit_expression_stmt(stmt),
+            Stmt {
+                expression: None,
+                print: Some(_),
+                var: None,
+                block: None,
+                ifStmt: None,
+            } => self.visit_print_stmt(stmt),
+            Stmt {
+                expression: None,
+                print: None,
+                var: Some(_),
+                block: None,
+                ifStmt: None,
+            } => self.visit_var_stmt(stmt),
+            Stmt {
+                expression: None,
+                print: None,
+                var: None,
+                block: Some(_),
+                ifStmt: None,
+            } => self.visit_block_stmt(stmt),
+            Stmt {
+                expression: None,
+                print: None,
+                var: None,
+                block: None,
+                ifStmt: Some(_),
+            } => self.visit_if_stmt(stmt),
+            _ => println!("Invalid statement"),
+        }
+    }
+
+    pub fn interpret_stmts(&mut self, statements: Vec<Stmt>) {
         for stmt in statements.into_iter() {
             //TODO This is really stupid. Add the enum
-            match stmt {
-                Stmt {
-                    expression: Some(_),
-                    print: None,
-                    var: None,
-                    block: None,
-                } => self.visit_expression_stmt(stmt),
-                Stmt {
-                    expression: None,
-                    print: Some(_),
-                    var: None,
-                    block: None,
-                } => self.visit_print_stmt(stmt),
-                Stmt {
-                    expression: None,
-                    print: None,
-                    var: Some(_),
-                    block: None,
-                } => self.visit_var_stmt(stmt),
-                Stmt {
-                    expression: None,
-                    print: None,
-                    var: None,
-                    block: Some(_),
-                } => self.visit_block_stmt(stmt),
-                _ => println!("Invalid statement"),
-            }
+            self.interpret_stmt(stmt);
         }
     }
 
@@ -64,15 +81,29 @@ impl Interpreter {
             //TODO remove unwrap
             Expr::Variable { token: _ } => self.visit_var_expr(expr),
             Expr::Assign { name: _, value: _ } => self.visit_assign_expr(expr),
+            Expr::Logical {
+                left: _,
+                operator: _,
+                right: _,
+            } => Ok(self.visit_logical_expr(expr)),
             _ => Ok(Object::Nil),
         }
     }
 
     fn is_truthy(&self, object: Object) -> bool {
         match object {
-            Nil => false,
-            False => false,
-            True => true,
+            Object::Nil => false,
+            Object::Boolean(false) => false,
+            Object::Boolean(true) => true,
+            _ => true,
+        }
+    }
+
+    fn is_truthy_2(&self, object: &Object) -> bool {
+        match object {
+            Object::Nil => false,
+            Object::Boolean(false) => false,
+            Object::Boolean(true) => true,
             _ => true,
         }
     }
@@ -95,6 +126,29 @@ impl Interpreter {
             Expr::Literal {
                 literal_value: value,
             } => self.literal_to_object(value),
+            _ => Object::Nil,
+        }
+    }
+
+    fn visit_logical_expr(&mut self, expr: Expr) -> Object {
+        match expr {
+            Expr::Logical {
+                left: left,
+                operator: operator,
+                right: right,
+            } => {
+                let left_object = self.interpret(*left).unwrap().clone();
+                if operator.tokenType == TokenType::Or {
+                    if self.is_truthy_2(&left_object) {
+                        return left_object;
+                    }
+                } else {
+                    if !self.is_truthy_2(&left_object) {
+                        return left_object;
+                    }
+                }
+                return self.interpret(*right).unwrap();
+            }
             _ => Object::Nil,
         }
     }
@@ -257,7 +311,7 @@ impl Interpreter {
         //Store previous environment
         let previous = self.environment.clone();
         //self.environment = environment;
-        self.interpret_stmt(statements);
+        self.interpret_stmts(statements);
         //Set the environment back to previous one.
         self.environment = previous;
     }
@@ -282,6 +336,24 @@ impl Interpreter {
                 }
             }
             _ => panic!("Not here! error visiting assign expression"),
+        }
+    }
+
+    fn visit_if_stmt(&mut self, stmt: Stmt) {
+        match stmt.ifStmt {
+            Some(statement) => match self.interpret(*statement.condition) {
+                Ok(obj) => {
+                    if self.is_truthy(obj) {
+                        self.interpret_stmt(*statement.thenBranch);
+                    } else {
+                        self.interpret_stmt(*statement.elseBranch.unwrap());
+                    }
+                }
+                Err(e) => {
+                    println!("Error: {:?}", e)
+                }
+            },
+            _ => println!("None!"),
         }
     }
 }

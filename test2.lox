@@ -1,0 +1,22 @@
+print 10>2;
+if (10<2) {
+    print "hello";
+    } else {
+    print "wee";
+};
+if (10>2) {
+    print "hello";
+    } else {
+    print "wee";
+};
+
+var a = 5;
+if (10>2) {
+    a = 10;
+    } else {
+    a = 20;
+};
+print a;
+
+print "hi" or 2;
+print nil or "yes";

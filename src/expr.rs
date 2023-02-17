@@ -17,6 +17,11 @@ pub enum Expr {
     Literal {
         literal_value: LiteralValue,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
     Variable {
         token: Token,
     },
@@ -48,11 +53,20 @@ pub struct Var {
     pub initializer: Option<Expr>,
 }
 
+#[derive(Debug)]
+pub struct IfStmt {
+    pub condition: Box<Expr>,
+    pub thenBranch: Box<Stmt>,
+    pub elseBranch: Option<Box<Stmt>>,
+}
+
 //TODO update to enums
+//SOON
 #[derive(Debug)]
 pub struct Stmt {
     pub expression: Option<Expr>,
     pub print: Option<Expr>,
     pub var: Option<Var>,
     pub block: Option<Vec<Stmt>>,
+    pub ifStmt: Option<IfStmt>,
 }

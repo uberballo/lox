@@ -1,5 +1,5 @@
 pub use crate::error::ParserError;
-pub use crate::expr::{Expr, LiteralValue, Stmt, Var};
+pub use crate::expr::{Expr, IfStmt, LiteralValue, Stmt, Var};
 pub use crate::token::{Token, TokenType};
 
 pub struct Parser {
@@ -64,6 +64,7 @@ impl Parser {
                             initializer: Some(expr),
                         }),
                         block: None,
+                        ifStmt: None,
                     });
                 }
             }
@@ -81,7 +82,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
-        let mut expr: Expr = self.equality()?;
+        let mut expr: Expr = self.or()?;
 
         while matches!(self, TokenType::Equal) {
             let equals = self.previous();
@@ -105,7 +106,40 @@ impl Parser {
         return Ok(expr);
     }
 
+    fn or(&mut self) -> Result<Expr, ParserError> {
+        let mut expr: Expr = self.and()?;
+
+        while matches!(self, TokenType::Or) {
+            let operator = self.previous();
+            let right = self.and()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            }
+        }
+        return Ok(expr);
+    }
+
+    fn and(&mut self) -> Result<Expr, ParserError> {
+        let mut expr: Expr = self.equality()?;
+
+        while (matches!(self, TokenType::And)) {
+            let operator = self.previous();
+            let right = self.equality()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            }
+        }
+        return Ok(expr);
+    }
+
     fn statement(&mut self) -> Result<Stmt, ParserError> {
+        if matches!(self, TokenType::If) {
+            return self.if_statement();
+        }
         if matches!(self, TokenType::Print) {
             return self.print_statement();
         }
@@ -115,18 +149,47 @@ impl Parser {
         return self.expression_statement();
     }
 
+    fn if_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.".to_string())?;
+        match self.expression() {
+            Err(err) => return Err(err),
+            Ok(expr) => {
+                self.consume(TokenType::RightParen, "Expect ')' after 'if'.".to_string())?;
+                let then_branch = self.statement()?;
+                let else_branch = if matches!(self, TokenType::Else) {
+                    Some(Box::new(self.statement()?))
+                } else {
+                    None
+                };
+
+                return Ok(Stmt {
+                    expression: None,
+                    print: None,
+                    var: None,
+                    block: None,
+                    ifStmt: Some(IfStmt {
+                        condition: Box::new(expr),
+                        thenBranch: Box::new(then_branch),
+                        elseBranch: else_branch,
+                    }),
+                });
+            }
+        }
+    }
+
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
         let value = self.expression();
         match value {
             Err(err) => return Err(err),
             Ok(expr) => {
-                let a = self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string());
+                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
 
                 return Ok(Stmt {
                     expression: None,
                     print: Some(expr),
                     var: None,
                     block: None,
+                    ifStmt: None,
                 });
             }
         }
@@ -148,6 +211,7 @@ impl Parser {
                     print: None,
                     var: None,
                     block: None,
+                    ifStmt: None,
                 });
             }
         }
@@ -166,6 +230,7 @@ impl Parser {
             print: None,
             var: None,
             block: Some(statements),
+            ifStmt: None,
         });
     }
 
