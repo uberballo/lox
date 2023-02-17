@@ -138,7 +138,7 @@ impl Interpreter {
                 right: right,
             } => {
                 let left_object = self.interpret(*left).unwrap().clone();
-                if operator.tokenType == TokenType::Or {
+                if operator.token_type == TokenType::Or {
                     if self.is_truthy_2(&left_object) {
                         return left_object;
                     }
