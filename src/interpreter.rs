@@ -3,9 +3,11 @@ pub use crate::error::RuntimeError;
 pub use crate::expr::{Expr, LiteralValue, Stmt};
 pub use crate::object::Object;
 pub use crate::token::{Token, TokenType};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Interpreter {
-    pub environment: Environment,
+    pub environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
@@ -194,6 +196,7 @@ impl Interpreter {
             } => {
                 let left_value: Object = self.interpret(*left).unwrap();
                 let right_value: Object = self.interpret(*right).unwrap();
+
                 match operator.token_type {
                     TokenType::Minus => {
                         self.check_number_operands(operator, &left_value, &right_value);
@@ -284,7 +287,6 @@ impl Interpreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: Stmt) {
-        println!("expression");
         let _object: Option<Result<Object, RuntimeError>> = match stmt.expression {
             Some(expr) => Some(self.interpret(expr)),
             _ => None,
@@ -307,7 +309,7 @@ impl Interpreter {
                 };
                 match value {
                     Err(e) => panic!("{:?}", e),
-                    Ok(value) => self.environment.define(var.name.lexeme, value),
+                    Ok(value) => self.environment.borrow_mut().define(var.name.lexeme, value),
                 }
             }
             None => println!("None"),
@@ -316,7 +318,12 @@ impl Interpreter {
 
     fn visit_block_stmt(&mut self, stmt: Stmt) {
         match stmt.block {
-            Some(statements) => self.execute_block(statements),
+            Some(statements) => self.execute_block(
+                statements,
+                Rc::new(RefCell::new(Environment::new_with_enclosing(
+                    &self.environment,
+                ))),
+            ),
             _ => println!("None!"),
         }
     }
@@ -325,7 +332,7 @@ impl Interpreter {
         match stmt.whileStmt {
             Some(whileStmt) => {
                 let condition = *whileStmt.condition.clone();
-                let mut value = self.interpret(*whileStmt.condition).unwrap();
+                let mut value = self.interpret(condition.clone()).unwrap();
                 while self.is_truthy_2(&value) {
                     self.interpret_stmt(*whileStmt.body.clone());
                     value = self.interpret(condition.clone()).unwrap();
@@ -335,10 +342,11 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: Vec<Stmt>) {
+    fn execute_block(&mut self, statements: Vec<Stmt>, env: Rc<RefCell<Environment>>) {
         //Store previous environment
         let previous = self.environment.clone();
-        //self.environment = environment;
+        self.environment = env;
+        // Check environment
         self.interpret_stmts(statements);
         //Set the environment back to previous one.
         self.environment = previous;
@@ -346,7 +354,7 @@ impl Interpreter {
 
     fn visit_var_expr(&self, expr: Expr) -> Result<Object, RuntimeError> {
         match expr {
-            Expr::Variable { token } => return self.environment.get(token),
+            Expr::Variable { token } => return self.environment.borrow().get(token),
             _ => panic!("Not here! Error"),
         }
     }
@@ -357,7 +365,7 @@ impl Interpreter {
                 let new_value = self.interpret(*value);
                 match new_value {
                     Ok(obj) => {
-                        self.environment.assign(name, obj.clone())?;
+                        self.environment.borrow_mut().assign(name, obj.clone())?;
                         return Ok(obj);
                     }
                     Err(e) => return Err(e),

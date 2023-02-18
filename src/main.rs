@@ -1,6 +1,7 @@
-
+use std::cell::RefCell;
 use std::fs;
 use std::io;
+use std::rc::Rc;
 
 mod environment;
 mod error;
@@ -14,7 +15,9 @@ mod token;
 fn main() {
     let mut pattern = std::env::args();
     let environment = environment::Environment::new();
-    let interpreter = interpreter::Interpreter { environment };
+    let interpreter = interpreter::Interpreter {
+        environment: Rc::new(RefCell::new(environment)),
+    };
     let mut lox = Lox { interpreter };
 
     match pattern.len() {
@@ -67,7 +70,6 @@ impl Lox {
         println!();
         let mut parser = parser::Parser::new(tokens);
         let mut statements = parser.parse();
-
         println!();
         for st in &mut statements {
             println!("{:?}", st);

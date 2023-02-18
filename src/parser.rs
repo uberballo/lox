@@ -72,9 +72,16 @@ impl Parser {
         };
         self.synchronize();
         //TODO should return null
-        return Err(ParserError {
-            token_type: self.peek().token_type,
-            message: "bad broken".to_string(),
+        return Ok(Stmt {
+            expression: None,
+            print: None,
+            var: Some(Var {
+                name: name,
+                initializer: None,
+            }),
+            block: None,
+            ifStmt: None,
+            whileStmt: None,
         });
     }
 
@@ -138,6 +145,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, ParserError> {
+        if matches!(self, TokenType::For) {
+            return self.for_statement();
+        }
         if matches!(self, TokenType::If) {
             return self.if_statement();
         }
@@ -153,10 +163,103 @@ impl Parser {
         return self.expression_statement();
     }
 
+    fn for_statement(&mut self) -> Result<Stmt, ParserError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'for'.".to_string())?;
+        let initializer = if matches!(self, TokenType::Semicolon) {
+            None
+        } else if matches!(self, TokenType::Var) {
+            Some(self.var_declaration())
+        } else {
+            Some(self.expression_statement())
+        };
+
+        let mut condition = if matches!(self, TokenType::Semicolon) {
+            None
+        } else {
+            Some(self.expression())
+        };
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after loop condition.".to_string(),
+        )?;
+
+        let increment = if matches!(self, TokenType::RightParen) {
+            None
+        } else {
+            Some(self.expression())
+        };
+
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after for clause.".to_string(),
+        )?;
+
+        let mut body = self.statement()?;
+        if increment.is_some() {
+            body = Stmt {
+                expression: None,
+                print: None,
+                var: None,
+                block: Some(vec![
+                    Stmt {
+                        expression: Some(increment.unwrap()?),
+                        print: None,
+                        var: None,
+                        block: None,
+                        ifStmt: None,
+                        whileStmt: None,
+                    },
+                    body,
+                ]),
+                ifStmt: None,
+                whileStmt: None,
+            };
+        }
+
+        if condition.is_none() {
+            condition = Some(Ok(Expr::Literal {
+                literal_value: LiteralValue::Boolean(true),
+            }));
+        }
+
+        body = Stmt {
+            expression: None,
+            print: None,
+            var: None,
+            block: None,
+            ifStmt: None,
+            whileStmt: Some(WhileStmt {
+                condition: Box::new(condition.unwrap()?),
+                body: Box::new(body),
+            }),
+        };
+
+        if initializer.is_some() {
+            body = Stmt {
+                expression: None,
+                print: None,
+                var: None,
+                block: Some(vec![initializer.unwrap()?, body]),
+                ifStmt: None,
+                whileStmt: None,
+            };
+        }
+        return Ok(body);
+    }
+
     fn while_statement(&mut self) -> Result<Stmt, ParserError> {
-        self.consume(TokenType::LeftParen, "Expect '(' after 'if'.".to_string())?;
+        self.consume(
+            TokenType::LeftParen,
+            "Expect '(' after 'while'.".to_string(),
+        )?;
+
         let condition = self.expression()?;
-        self.consume(TokenType::RightParen, "Expect ')' after 'if'.".to_string())?;
+        println!("condition while stmt {}", condition);
+
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after condition.".to_string(),
+        )?;
         let body = self.statement()?;
         return Ok(Stmt {
             expression: None,
