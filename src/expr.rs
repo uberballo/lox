@@ -68,12 +68,38 @@ pub struct WhileStmt {
 
 //TODO update to enums
 //SOON
+//#[derive(Debug, Clone)]
+//pub struct Stmt {
+//    pub expression: Option<Expr>,
+//    pub print: Option<Expr>,
+//    pub var: Option<Var>,
+//    pub block: Option<Vec<Stmt>>,
+//    pub ifStmt: Option<IfStmt>,
+//    pub whileStmt: Option<WhileStmt>,
+//}
+
 #[derive(Debug, Clone)]
-pub struct Stmt {
-    pub expression: Option<Expr>,
-    pub print: Option<Expr>,
-    pub var: Option<Var>,
-    pub block: Option<Vec<Stmt>>,
-    pub ifStmt: Option<IfStmt>,
-    pub whileStmt: Option<WhileStmt>,
+pub enum Stmt {
+    Expression {
+        expr: Expr,
+    },
+    Print {
+        expr: Expr,
+    },
+    Var {
+        name: Token,
+        initializer: Option<Expr>,
+    },
+    Block {
+        statements: Vec<Stmt>,
+    },
+    IfStmt {
+        condition: Expr,
+        thenBranch: Box<Stmt>,
+        elseBranch: Option<Box<Stmt>>,
+    },
+    WhileStmt {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
 }

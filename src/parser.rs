@@ -56,32 +56,18 @@ impl Parser {
                 Err(err) => return Err(err),
                 Ok(expr) => {
                     self.consume(TokenType::Semicolon, "Expect variable name.".to_string())?;
-                    return Ok(Stmt {
-                        expression: None,
-                        print: None,
-                        var: Some(Var {
-                            name: name,
-                            initializer: Some(expr),
-                        }),
-                        block: None,
-                        ifStmt: None,
-                        whileStmt: None,
+                    return Ok(Stmt::Var {
+                        name: name,
+                        initializer: Some(expr),
                     });
                 }
             }
         };
         self.synchronize();
         //TODO should return null
-        return Ok(Stmt {
-            expression: None,
-            print: None,
-            var: Some(Var {
-                name: name,
-                initializer: None,
-            }),
-            block: None,
-            ifStmt: None,
-            whileStmt: None,
+        return Ok(Stmt::Var {
+            name: name,
+            initializer: None,
         });
     }
 
@@ -196,23 +182,13 @@ impl Parser {
 
         let mut body = self.statement()?;
         if increment.is_some() {
-            body = Stmt {
-                expression: None,
-                print: None,
-                var: None,
-                block: Some(vec![
-                    Stmt {
-                        expression: Some(increment.unwrap()?),
-                        print: None,
-                        var: None,
-                        block: None,
-                        ifStmt: None,
-                        whileStmt: None,
+            body = Stmt::Block {
+                statements: vec![
+                    Stmt::Expression {
+                        expr: increment.unwrap()?,
                     },
                     body,
-                ]),
-                ifStmt: None,
-                whileStmt: None,
+                ],
             };
         }
 
@@ -222,26 +198,14 @@ impl Parser {
             }));
         }
 
-        body = Stmt {
-            expression: None,
-            print: None,
-            var: None,
-            block: None,
-            ifStmt: None,
-            whileStmt: Some(WhileStmt {
-                condition: Box::new(condition.unwrap()?),
-                body: Box::new(body),
-            }),
+        body = Stmt::WhileStmt {
+            condition: condition.unwrap()?,
+            body: Box::new(body),
         };
 
         if initializer.is_some() {
-            body = Stmt {
-                expression: None,
-                print: None,
-                var: None,
-                block: Some(vec![initializer.unwrap()?, body]),
-                ifStmt: None,
-                whileStmt: None,
+            body = Stmt::Block {
+                statements: vec![initializer.unwrap()?, body],
             };
         }
         return Ok(body);
@@ -261,16 +225,9 @@ impl Parser {
             "Expect ')' after condition.".to_string(),
         )?;
         let body = self.statement()?;
-        return Ok(Stmt {
-            expression: None,
-            print: None,
-            var: None,
-            block: None,
-            ifStmt: None,
-            whileStmt: Some(WhileStmt {
-                condition: Box::new(condition),
-                body: Box::new(body),
-            }),
+        return Ok(Stmt::WhileStmt {
+            condition: condition,
+            body: Box::new(body),
         });
     }
 
@@ -287,17 +244,10 @@ impl Parser {
                     None
                 };
 
-                return Ok(Stmt {
-                    expression: None,
-                    print: None,
-                    var: None,
-                    block: None,
-                    ifStmt: Some(IfStmt {
-                        condition: Box::new(expr),
-                        thenBranch: Box::new(then_branch),
-                        elseBranch: else_branch,
-                    }),
-                    whileStmt: None,
+                return Ok(Stmt::IfStmt {
+                    condition: expr,
+                    thenBranch: Box::new(then_branch),
+                    elseBranch: else_branch,
                 });
             }
         }
@@ -310,14 +260,7 @@ impl Parser {
             Ok(expr) => {
                 self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
 
-                return Ok(Stmt {
-                    expression: None,
-                    print: Some(expr),
-                    var: None,
-                    block: None,
-                    ifStmt: None,
-                    whileStmt: None,
-                });
+                return Ok(Stmt::Print { expr });
             }
         }
     }
@@ -333,14 +276,7 @@ impl Parser {
             }
             Ok(expr) => {
                 self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
-                return Ok(Stmt {
-                    expression: Some(expr),
-                    print: None,
-                    var: None,
-                    block: None,
-                    ifStmt: None,
-                    whileStmt: None,
-                });
+                return Ok(Stmt::Expression { expr });
             }
         }
     }
@@ -353,14 +289,7 @@ impl Parser {
             statements.push(stmt);
         }
         self.consume(TokenType::RightBrace, "Expect '}' after block.".to_string())?;
-        return Ok(Stmt {
-            expression: None,
-            print: None,
-            var: None,
-            block: Some(statements),
-            ifStmt: None,
-            whileStmt: None,
-        });
+        return Ok(Stmt::Block { statements });
     }
 
     fn equality(&mut self) -> Result<Expr, ParserError> {

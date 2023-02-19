@@ -25,5 +25,6 @@ More technical debt.
 - [x] Parsing Expressions
 - [x] Evaluating Expressions
 - [x] Statements and State
-- [ ] Control flow
+- [x] Control flow
+- [ ] Functions
 

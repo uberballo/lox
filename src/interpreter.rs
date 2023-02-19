@@ -22,54 +22,12 @@ impl Interpreter {
     // Really refactor this
     fn interpret_stmt(&mut self, stmt: Stmt) {
         match stmt {
-            Stmt {
-                expression: Some(_),
-                print: None,
-                var: None,
-                block: None,
-                ifStmt: None,
-                whileStmt: None,
-            } => self.visit_expression_stmt(stmt),
-            Stmt {
-                expression: None,
-                print: Some(_),
-                var: None,
-                block: None,
-                ifStmt: None,
-                whileStmt: None,
-            } => self.visit_print_stmt(stmt),
-            Stmt {
-                expression: None,
-                print: None,
-                var: Some(_),
-                block: None,
-                ifStmt: None,
-                whileStmt: None,
-            } => self.visit_var_stmt(stmt),
-            Stmt {
-                expression: None,
-                print: None,
-                var: None,
-                block: Some(_),
-                ifStmt: None,
-                whileStmt: None,
-            } => self.visit_block_stmt(stmt),
-            Stmt {
-                expression: None,
-                print: None,
-                var: None,
-                block: None,
-                ifStmt: Some(_),
-                whileStmt: None,
-            } => self.visit_if_stmt(stmt),
-            Stmt {
-                expression: None,
-                print: None,
-                var: None,
-                block: None,
-                ifStmt: None,
-                whileStmt: Some(_),
-            } => self.visit_while_stmt(stmt),
+            Stmt::Expression { .. } => self.visit_expression_stmt(stmt),
+            Stmt::Print { .. } => self.visit_print_stmt(stmt),
+            Stmt::Var { .. } => self.visit_var_stmt(stmt),
+            Stmt::Block { .. } => self.visit_block_stmt(stmt),
+            Stmt::IfStmt { .. } => self.visit_if_stmt(stmt),
+            Stmt::WhileStmt { .. } => self.visit_while_stmt(stmt),
 
             _ => println!("Invalid statement"),
         }
@@ -287,38 +245,40 @@ impl Interpreter {
     }
 
     fn visit_expression_stmt(&mut self, stmt: Stmt) {
-        let _object: Option<Result<Object, RuntimeError>> = match stmt.expression {
-            Some(expr) => Some(self.interpret(expr)),
+        let _object: Option<Result<Object, RuntimeError>> = match stmt {
+            Stmt::Expression { expr } => Some(self.interpret(expr)),
             _ => None,
         };
     }
 
     fn visit_print_stmt(&mut self, stmt: Stmt) {
-        match stmt.print {
-            Some(expr) => println!("Printing: {:?}", self.interpret(expr).unwrap_or_default()),
-            None => println!("None"),
+        match stmt {
+            Stmt::Print { expr } => {
+                println!("Printing: {:?}", self.interpret(expr).unwrap_or_default())
+            }
+            _ => println!("None"),
         };
     }
 
     fn visit_var_stmt(&mut self, stmt: Stmt) {
-        match stmt.var {
-            Some(var) => {
-                let value = match var.initializer {
+        match stmt {
+            Stmt::Var { name, initializer } => {
+                let value = match initializer {
                     Some(initializer) => self.interpret(initializer),
                     None => Ok(Object::Nil),
                 };
                 match value {
                     Err(e) => panic!("{:?}", e),
-                    Ok(value) => self.environment.borrow_mut().define(var.name.lexeme, value),
+                    Ok(value) => self.environment.borrow_mut().define(name.lexeme, value),
                 }
             }
-            None => println!("None"),
+            _ => println!("None"),
         };
     }
 
     fn visit_block_stmt(&mut self, stmt: Stmt) {
-        match stmt.block {
-            Some(statements) => self.execute_block(
+        match stmt {
+            Stmt::Block { statements } => self.execute_block(
                 statements,
                 Rc::new(RefCell::new(Environment::new_with_enclosing(
                     &self.environment,
@@ -329,12 +289,12 @@ impl Interpreter {
     }
     // TODO fix this
     fn visit_while_stmt(&mut self, stmt: Stmt) {
-        match stmt.whileStmt {
-            Some(whileStmt) => {
-                let condition = *whileStmt.condition.clone();
+        match stmt {
+            Stmt::WhileStmt { condition, body } => {
+                let condition = condition.clone();
                 let mut value = self.interpret(condition.clone()).unwrap();
                 while self.is_truthy_2(&value) {
-                    self.interpret_stmt(*whileStmt.body.clone());
+                    self.interpret_stmt(*body.clone());
                     value = self.interpret(condition.clone()).unwrap();
                 }
             }
@@ -376,13 +336,17 @@ impl Interpreter {
     }
 
     fn visit_if_stmt(&mut self, stmt: Stmt) {
-        match stmt.ifStmt {
-            Some(statement) => match self.interpret(*statement.condition) {
+        match stmt {
+            Stmt::IfStmt {
+                condition,
+                thenBranch,
+                elseBranch,
+            } => match self.interpret(condition) {
                 Ok(obj) => {
                     if self.is_truthy(obj) {
-                        self.interpret_stmt(*statement.thenBranch);
+                        self.interpret_stmt(*thenBranch);
                     } else {
-                        self.interpret_stmt(*statement.elseBranch.unwrap());
+                        self.interpret_stmt(*elseBranch.unwrap());
                     }
                 }
                 Err(e) => {
