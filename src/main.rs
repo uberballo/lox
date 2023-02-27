@@ -3,6 +3,7 @@ use std::fs;
 use std::io;
 use std::rc::Rc;
 
+mod callable;
 mod environment;
 mod error;
 mod expr;
@@ -14,10 +15,8 @@ mod token;
 
 fn main() {
     let mut pattern = std::env::args();
-    let environment = environment::Environment::new();
-    let interpreter = interpreter::Interpreter {
-        environment: Rc::new(RefCell::new(environment)),
-    };
+    //let environment = environment::Environment::new();
+    let interpreter = interpreter::Interpreter::new();
     let mut lox = Lox { interpreter };
 
     match pattern.len() {

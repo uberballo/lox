@@ -41,7 +41,9 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParserError> {
-        if matches!(self, TokenType::Var) {
+        if matches!(self, TokenType::Fun) {
+            self.function("function")
+        } else if matches!(self, TokenType::Var) {
             self.var_declaration()
         } else {
             self.statement()
@@ -73,6 +75,49 @@ impl Parser {
 
     fn expression(&mut self) -> Result<Expr, ParserError> {
         self.assignment()
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, ParserError> {
+        let name = self.consume(TokenType::Identifier, format!("Expect {} name.", kind))?;
+        self.consume(
+            TokenType::LeftParen,
+            format!("Expect '(' after {} name.", kind),
+        );
+        let mut parameters: Vec<Token> = Vec::new();
+        if (!matches!(self, TokenType::RightParen)) {
+            while (matches!(self, TokenType::Comma)) {
+                if parameters.len() >= 255 {
+                    return Err(ParserError {
+                        token_type: self.peek().token_type,
+                        message: "Can't have more than 255 parameters".to_string(),
+                    });
+                }
+                parameters.push(
+                    self.consume(TokenType::Identifier, "Expect parameter name.".to_string())?,
+                )
+            }
+        }
+        self.consume(
+            TokenType::RightParen,
+            "Expect ')' after parameters".to_string(),
+        )?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            format!("Expect `{{` before {} body", kind),
+        )?;
+        // TODO fix this into something prettier. Block_statement could return a
+        // vector
+        let body = match self.block_statement()? {
+            Stmt::Block { statements } => statements,
+            _ => Vec::new(),
+        };
+
+        return Ok(Stmt::Function {
+            name,
+            params: parameters,
+            body: body,
+        });
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
@@ -365,7 +410,42 @@ impl Parser {
                 right: Box::new(right),
             });
         }
-        return self.primary();
+        return self.call();
+    }
+
+    fn call(&mut self) -> Result<Expr, ParserError> {
+        let mut expr = self.primary()?;
+        loop {
+            if matches!(self, TokenType::LeftParen) {
+                expr = self.finish_call(expr)?;
+            } else {
+                return Ok(expr);
+            }
+        }
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParserError> {
+        let mut arguments: Vec<Expr> = Vec::new();
+        if matches!(self, TokenType::RightParen) {
+            while matches!(self, TokenType::Comma) {
+                if arguments.len() >= 255 {
+                    return Err(ParserError {
+                        token_type: self.peek().token_type,
+                        message: "Can't have more than 255 arguments".to_string(),
+                    });
+                }
+                arguments.push(self.expression()?);
+            }
+        }
+        let paren = self.consume(
+            TokenType::RightParen,
+            "Expect ')' after arguments.".to_string(),
+        )?;
+        return Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren,
+            arguments: Box::new(arguments),
+        });
     }
 
     fn primary(&mut self) -> Result<Expr, ParserError> {

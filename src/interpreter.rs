@@ -1,12 +1,15 @@
+use crate::callable::{self, Callable, Function};
 pub use crate::environment::Environment;
 pub use crate::error::RuntimeError;
 pub use crate::expr::{Expr, LiteralValue, Stmt};
 pub use crate::object::Object;
 pub use crate::token::{Token, TokenType};
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter {
+    pub globals: Rc<RefCell<Environment>>,
     pub environment: Rc<RefCell<Environment>>,
 }
 
@@ -18,7 +21,27 @@ impl Interpreter {
     //fn evaluate(expr Expr) -> object {
     //    return expr.accept(this)
     //}
-
+    pub fn new() -> Interpreter {
+        Interpreter {
+            globals: Rc::new(RefCell::new(Environment::new())),
+            environment: Rc::new(RefCell::new(Environment::new())),
+        }
+    }
+    fn get_clock() -> Object {
+        let clock = Object::Call(Callable {
+            arity: 0,
+            // ignore args, return new number object.
+            func: Box::new(|_: Vec<Object>| {
+                Object::Number(
+                    (SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Somehow the time broke")
+                        .as_millis()) as f64,
+                )
+            }),
+        });
+        return clock;
+    }
     // Really refactor this
     fn interpret_stmt(&mut self, stmt: Stmt) {
         match stmt {
@@ -28,6 +51,7 @@ impl Interpreter {
             Stmt::Block { .. } => self.visit_block_stmt(stmt),
             Stmt::IfStmt { .. } => self.visit_if_stmt(stmt),
             Stmt::WhileStmt { .. } => self.visit_while_stmt(stmt),
+            Stmt::Function { .. } => self.visit_function_stmt(stmt),
 
             _ => println!("Invalid statement"),
         }
@@ -60,6 +84,11 @@ impl Interpreter {
                 operator: _,
                 right: _,
             } => Ok(self.visit_logical_expr(expr)),
+            Expr::Call {
+                callee: _,
+                paren: _,
+                arguments: _,
+            } => self.visit_call_expr(expr),
             _ => Ok(Object::Nil),
         }
     }
@@ -212,6 +241,42 @@ impl Interpreter {
         }
     }
 
+    fn visit_call_expr(&mut self, expr: Expr) -> Result<Object, RuntimeError> {
+        match expr {
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => {
+                let calleeValue = self.interpret(*callee).unwrap();
+
+                let argumentObjects: Result<Vec<Object>, RuntimeError> = arguments
+                    .into_iter()
+                    .map(|x| self.interpret(x))
+                    .collect::<Result<Vec<Object>, RuntimeError>>();
+
+                let args = argumentObjects.unwrap();
+
+                // TODO check this
+                match calleeValue {
+                    Object::Call(callable) => {
+                        let agruments_len = args.len();
+                        // TODO Should return runtimeError
+                        if callable.arity != agruments_len {
+                            return Err(RuntimeError {
+                                token: paren,
+                                message: "Something went wrong with the callable".to_string(),
+                            });
+                        }
+                        return callable.call(self, args);
+                    }
+                    _ => return Ok(Object::Nil),
+                }
+            }
+            _ => return Ok(Object::Nil),
+        }
+    }
+
     fn check_number_operand(&self, _operator: Token, operand: &Object) {
         match operand {
             Object::Number(_) => (),
@@ -249,6 +314,19 @@ impl Interpreter {
             Stmt::Expression { expr } => Some(self.interpret(expr)),
             _ => None,
         };
+    }
+
+    fn visit_function_stmt(&mut self, stmt: Stmt) {
+        match stmt {
+            Stmt::Function { name, params, body } => {
+                //let function = Function { name, params, body };
+                // TODO function should be same as callable.
+                //self.environment
+                //    .borrow()
+                //    .define(name.lexeme.clone(), Object::Call((Function)))
+            }
+            _ => println!("No function"),
+        }
     }
 
     fn visit_print_stmt(&mut self, stmt: Stmt) {
@@ -302,7 +380,7 @@ impl Interpreter {
         }
     }
 
-    fn execute_block(&mut self, statements: Vec<Stmt>, env: Rc<RefCell<Environment>>) {
+    pub fn execute_block(&mut self, statements: Vec<Stmt>, env: Rc<RefCell<Environment>>) {
         //Store previous environment
         let previous = self.environment.clone();
         self.environment = env;

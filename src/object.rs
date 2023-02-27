@@ -1,3 +1,4 @@
+use crate::callable::Callable;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -8,6 +9,7 @@ pub enum Object {
     Boolean(bool),
     True,
     False,
+    Call(Callable),
 }
 
 impl Default for Object {
@@ -25,6 +27,7 @@ impl<'a> fmt::Display for Object {
             Object::Nil => write!(f, "nil"),
             Object::True => write!(f, "true"),
             Object::False => write!(f, "false"),
+            _ => write!(f, "Nil"),
         }
     }
 }
