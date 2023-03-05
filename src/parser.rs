@@ -85,7 +85,7 @@ impl Parser {
         );
         let mut parameters: Vec<Token> = Vec::new();
         if (!matches!(self, TokenType::RightParen)) {
-            while (matches!(self, TokenType::Comma)) {
+            loop {
                 if parameters.len() >= 255 {
                     return Err(ParserError {
                         token_type: self.peek().token_type,
@@ -94,8 +94,13 @@ impl Parser {
                 }
                 parameters.push(
                     self.consume(TokenType::Identifier, "Expect parameter name.".to_string())?,
-                )
+                );
+
+                if (!matches!(self, TokenType::Comma)) {
+                    break;
+                }
             }
+            print!("{}", self.peek());
         }
         self.consume(
             TokenType::RightParen,
@@ -419,15 +424,16 @@ impl Parser {
             if matches!(self, TokenType::LeftParen) {
                 expr = self.finish_call(expr)?;
             } else {
-                return Ok(expr);
+                break;
             }
         }
+        return Ok(expr);
     }
 
     fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParserError> {
         let mut arguments: Vec<Expr> = Vec::new();
-        if matches!(self, TokenType::RightParen) {
-            while matches!(self, TokenType::Comma) {
+        if !matches!(self, TokenType::RightParen) {
+            loop {
                 if arguments.len() >= 255 {
                     return Err(ParserError {
                         token_type: self.peek().token_type,
@@ -435,8 +441,12 @@ impl Parser {
                     });
                 }
                 arguments.push(self.expression()?);
+                if !matches!(self, TokenType::Comma) {
+                    break;
+                }
             }
         }
+
         let paren = self.consume(
             TokenType::RightParen,
             "Expect ')' after arguments.".to_string(),

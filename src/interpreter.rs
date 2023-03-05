@@ -1,4 +1,4 @@
-use crate::callable::{self, Callable, Function};
+use crate::callable::{self, LoxFunc};
 pub use crate::environment::Environment;
 pub use crate::error::RuntimeError;
 pub use crate::expr::{Expr, LiteralValue, Stmt};
@@ -28,7 +28,7 @@ impl Interpreter {
         }
     }
     fn get_clock() -> Object {
-        let clock = Object::Call(Callable {
+        let clock = Object::Call(LoxFunc::Callable {
             arity: 0,
             // ignore args, return new number object.
             func: Box::new(|_: Vec<Object>| {
@@ -262,7 +262,7 @@ impl Interpreter {
                     Object::Call(callable) => {
                         let agruments_len = args.len();
                         // TODO Should return runtimeError
-                        if callable.arity != agruments_len {
+                        if callable.arity() != agruments_len {
                             return Err(RuntimeError {
                                 token: paren,
                                 message: "Something went wrong with the callable".to_string(),
@@ -319,11 +319,14 @@ impl Interpreter {
     fn visit_function_stmt(&mut self, stmt: Stmt) {
         match stmt {
             Stmt::Function { name, params, body } => {
-                //let function = Function { name, params, body };
-                // TODO function should be same as callable.
-                //self.environment
-                //    .borrow()
-                //    .define(name.lexeme.clone(), Object::Call((Function)))
+                let function = LoxFunc::Function {
+                    name: name.clone(),
+                    params,
+                    body,
+                };
+                self.environment
+                    .borrow_mut()
+                    .define(name.lexeme, Object::Call(function));
             }
             _ => println!("No function"),
         }

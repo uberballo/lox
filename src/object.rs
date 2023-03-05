@@ -1,4 +1,4 @@
-use crate::callable::Callable;
+use crate::callable::LoxFunc;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -9,7 +9,7 @@ pub enum Object {
     Boolean(bool),
     True,
     False,
-    Call(Callable),
+    Call(LoxFunc),
 }
 
 impl Default for Object {
