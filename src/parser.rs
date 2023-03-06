@@ -190,6 +190,9 @@ impl Parser {
         if matches!(self, TokenType::Print) {
             return self.print_statement();
         }
+        if matches!(self, TokenType::Return) {
+            return self.return_statement();
+        }
         if matches!(self, TokenType::While) {
             return self.while_statement();
         }
@@ -313,6 +316,21 @@ impl Parser {
                 return Ok(Stmt::Print { expr });
             }
         }
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, ParserError> {
+        let keyword = self.previous();
+        let value = if (matches!(self, TokenType::Semicolon)) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after return value.".to_string(),
+        )?;
+        return Ok(Stmt::Return { keyword, value });
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {

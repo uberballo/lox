@@ -1,15 +1,10 @@
 use std::cell::RefCell;
+use std::fmt;
 use std::rc::Rc;
 
 use crate::error::RuntimeError;
 use crate::expr::Stmt;
 use crate::token::Token;
-
-//#[derive(Debug, Clone)]
-//pub struct Callable {
-//    pub arity: usize,
-//    pub func: Box<fn(Vec<Object>) -> Object>,
-//}
 
 use crate::interpreter::Environment;
 pub use crate::interpreter::Interpreter;
@@ -43,6 +38,7 @@ impl LoxFunc {
                         .borrow_mut()
                         .define(param.lexeme.clone(), arg.clone());
                 }
+                // TODO https://craftinginterpreters.com/functions.html#returning-from-calls
                 interpreter.execute_block(body.clone(), environment);
                 return Ok(Object::Nil);
             }
@@ -57,17 +53,12 @@ impl LoxFunc {
     }
 }
 
-//impl Callable {
-//    //Take vec objects, return object
-//    pub fn call(
-//        &self,
-//        interpreter: &mut Interpreter,
-//        arguments: Vec<Object>,
-//    ) -> Result<Object, RuntimeError> {
-//        return Ok((self.func)(arguments));
-//    }
-//}
-
-//impl Function {
-//    fn call(self, interpreter: &mut Interpreter, arguments: Vec<Object>) -> Object {}
-//}
+impl<'a> fmt::Display for LoxFunc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LoxFunc::Callable { .. } => write!(f, "Callable"),
+            LoxFunc::Function { name, .. } => write!(f, "<fn {}>", name),
+            _ => write!(f, "Nil"),
+        }
+    }
+}

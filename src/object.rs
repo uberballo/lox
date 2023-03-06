@@ -7,8 +7,6 @@ pub enum Object {
     String(String),
     Nil,
     Boolean(bool),
-    True,
-    False,
     Call(LoxFunc),
 }
 
@@ -25,8 +23,6 @@ impl<'a> fmt::Display for Object {
             Object::String(x) => write!(f, "\"{}\"", x),
             Object::Boolean(x) => write!(f, "\"{}\"", x),
             Object::Nil => write!(f, "nil"),
-            Object::True => write!(f, "true"),
-            Object::False => write!(f, "false"),
             _ => write!(f, "Nil"),
         }
     }

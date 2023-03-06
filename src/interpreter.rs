@@ -47,6 +47,10 @@ impl Interpreter {
         match stmt {
             Stmt::Expression { .. } => self.visit_expression_stmt(stmt),
             Stmt::Print { .. } => self.visit_print_stmt(stmt),
+            Stmt::Return { .. } => {
+                // TODO Fix this bubblegum
+                let _ = self.visit_return_stmt(stmt);
+            }
             Stmt::Var { .. } => self.visit_var_stmt(stmt),
             Stmt::Block { .. } => self.visit_block_stmt(stmt),
             Stmt::IfStmt { .. } => self.visit_if_stmt(stmt),
@@ -174,6 +178,18 @@ impl Interpreter {
         }
     }
 
+    fn addition(&self, a: Object, b: Object) -> Object {
+        match (a, b) {
+            (Object::Number(left_value), Object::Number(right_value)) => {
+                return Object::Number(left_value + right_value);
+            }
+            (Object::String(left_value), Object::String(right_value)) => {
+                return Object::String(format!("{}{}", left_value, right_value));
+            }
+            _ => Object::Nil,
+        }
+    }
+
     fn visit_binary_expr(&mut self, expr: Expr) -> Object {
         match expr {
             Expr::Binary {
@@ -191,12 +207,7 @@ impl Interpreter {
                         let right_number = self.object_number(right_value);
                         return Object::Number(left_number - right_number);
                     }
-                    TokenType::Plus => {
-                        self.check_number_operands(operator, &left_value, &right_value);
-                        let left_number = self.object_number(left_value);
-                        let right_number = self.object_number(right_value);
-                        return Object::Number(left_number + right_number);
-                    }
+                    TokenType::Plus => return self.addition(left_value, right_value),
                     TokenType::Slash => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
@@ -339,6 +350,20 @@ impl Interpreter {
             }
             _ => println!("None"),
         };
+    }
+
+    fn visit_return_stmt(&mut self, stmt: Stmt) -> Result<Option<Object>, RuntimeError> {
+        match stmt {
+            Stmt::Return { value, .. } => {
+                let new_value = match value {
+                    Some(expr) => Some(self.interpret(expr)?),
+                    None => None,
+                };
+
+                return Ok(new_value);
+            }
+            _ => return Ok(None),
+        }
     }
 
     fn visit_var_stmt(&mut self, stmt: Stmt) {
