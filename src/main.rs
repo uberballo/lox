@@ -64,14 +64,14 @@ impl Lox {
         let mut tokens = scanner.scan_tokens();
         println!();
         for tk in &mut tokens {
-            println!("{:?}", tk);
+            //println!("{:?}", tk);
         }
         println!();
         let mut parser = parser::Parser::new(tokens);
         let mut statements = parser.parse();
         println!();
         for st in &mut statements {
-            println!("{:?}", st);
+            //println!("{:?}", st);
         }
         println!();
         self.interpreter.interpret_stmts(statements);

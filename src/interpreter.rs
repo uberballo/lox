@@ -1,6 +1,7 @@
 use crate::callable::{self, LoxFunc};
 pub use crate::environment::Environment;
 pub use crate::error::RuntimeError;
+use crate::error::{Error, ReturnError};
 pub use crate::expr::{Expr, LiteralValue, Stmt};
 pub use crate::object::Object;
 pub use crate::token::{Token, TokenType};
@@ -43,22 +44,23 @@ impl Interpreter {
         return clock;
     }
     // Really refactor this
-    fn interpret_stmt(&mut self, stmt: Stmt) {
+    fn interpret_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         match stmt {
             Stmt::Expression { .. } => self.visit_expression_stmt(stmt),
             Stmt::Print { .. } => self.visit_print_stmt(stmt),
             Stmt::Return { .. } => {
                 // TODO Fix this bubblegum
-                let _ = self.visit_return_stmt(stmt);
+                self.visit_return_stmt(stmt)?;
             }
             Stmt::Var { .. } => self.visit_var_stmt(stmt),
-            Stmt::Block { .. } => self.visit_block_stmt(stmt),
-            Stmt::IfStmt { .. } => self.visit_if_stmt(stmt),
+            Stmt::Block { .. } => self.visit_block_stmt(stmt)?,
+            Stmt::IfStmt { .. } => self.visit_if_stmt(stmt)?,
             Stmt::WhileStmt { .. } => self.visit_while_stmt(stmt),
             Stmt::Function { .. } => self.visit_function_stmt(stmt),
 
             _ => println!("Invalid statement"),
         }
+        return Ok(());
     }
 
     pub fn interpret_stmts(&mut self, statements: Vec<Stmt>) {
@@ -74,7 +76,7 @@ impl Interpreter {
                 left: _,
                 operator: _,
                 right: _,
-            } => Ok(self.visit_binary_expr(expr)),
+            } => self.visit_binary_expr(expr),
             Expr::Unary {
                 operator: _,
                 right: _,
@@ -190,65 +192,65 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary_expr(&mut self, expr: Expr) -> Object {
+    fn visit_binary_expr(&mut self, expr: Expr) -> Result<Object, RuntimeError> {
         match expr {
             Expr::Binary {
                 left,
                 operator,
                 right,
             } => {
-                let left_value: Object = self.interpret(*left).unwrap();
-                let right_value: Object = self.interpret(*right).unwrap();
+                let left_value: Object = self.interpret(*left)?;
+                let right_value: Object = self.interpret(*right)?;
 
                 match operator.token_type {
                     TokenType::Minus => {
                         self.check_number_operands(operator, &left_value, &right_value);
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Number(left_number - right_number);
+                        return Ok(Object::Number(left_number - right_number));
                     }
-                    TokenType::Plus => return self.addition(left_value, right_value),
+                    TokenType::Plus => return Ok(self.addition(left_value, right_value)),
                     TokenType::Slash => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Number(left_number / right_number);
+                        return Ok(Object::Number(left_number / right_number));
                     }
                     TokenType::Star => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Number(left_number * right_number);
+                        return Ok(Object::Number(left_number * right_number));
                     }
                     TokenType::Greater => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Boolean(left_number > right_number);
+                        return Ok(Object::Boolean(left_number > right_number));
                     }
                     TokenType::GreaterEqual => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Boolean(left_number >= right_number);
+                        return Ok(Object::Boolean(left_number >= right_number));
                     }
                     TokenType::Less => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Boolean(left_number < right_number);
+                        return Ok(Object::Boolean(left_number < right_number));
                     }
                     TokenType::LessEqual => {
                         let left_number = self.object_number(left_value);
                         let right_number = self.object_number(right_value);
-                        return Object::Boolean(left_number <= right_number);
+                        return Ok(Object::Boolean(left_number <= right_number));
                     }
                     TokenType::BangEqual => {
-                        return Object::Boolean(!self.is_equal(left_value, right_value));
+                        return Ok(Object::Boolean(!self.is_equal(left_value, right_value)));
                     }
                     TokenType::EqualEqual => {
-                        return Object::Boolean(self.is_equal(left_value, right_value));
+                        return Ok(Object::Boolean(self.is_equal(left_value, right_value)));
                     }
                     //TODO No string + string yet.
-                    _ => return Object::Nil,
+                    _ => return Ok(Object::Nil),
                 }
             }
-            _ => Object::Nil,
+            _ => Ok(Object::Nil),
         }
     }
 
@@ -259,14 +261,14 @@ impl Interpreter {
                 paren,
                 arguments,
             } => {
-                let calleeValue = self.interpret(*callee).unwrap();
+                let calleeValue = self.interpret(*callee)?;
 
                 let argumentObjects: Result<Vec<Object>, RuntimeError> = arguments
                     .into_iter()
                     .map(|x| self.interpret(x))
                     .collect::<Result<Vec<Object>, RuntimeError>>();
 
-                let args = argumentObjects.unwrap();
+                let args = argumentObjects?;
 
                 // TODO check this
                 match calleeValue {
@@ -328,13 +330,16 @@ impl Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: Stmt) {
+        println!("VISIT FUNCTION");
         match stmt {
             Stmt::Function { name, params, body } => {
                 let function = LoxFunc::Function {
                     name: name.clone(),
                     params,
                     body,
+                    closure: Rc::clone(&self.environment),
                 };
+
                 self.environment
                     .borrow_mut()
                     .define(name.lexeme, Object::Call(function));
@@ -352,17 +357,19 @@ impl Interpreter {
         };
     }
 
-    fn visit_return_stmt(&mut self, stmt: Stmt) -> Result<Option<Object>, RuntimeError> {
+    fn visit_return_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         match stmt {
             Stmt::Return { value, .. } => {
-                let new_value = match value {
-                    Some(expr) => Some(self.interpret(expr)?),
-                    None => None,
+                match value {
+                    Some(expr) => {
+                        return Err(Error::ReturnError {
+                            value: self.interpret(expr).unwrap(),
+                        });
+                    }
+                    None => return Ok(()),
                 };
-
-                return Ok(new_value);
             }
-            _ => return Ok(None),
+            _ => return Ok(()),
         }
     }
 
@@ -382,7 +389,7 @@ impl Interpreter {
         };
     }
 
-    fn visit_block_stmt(&mut self, stmt: Stmt) {
+    fn visit_block_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         match stmt {
             Stmt::Block { statements } => self.execute_block(
                 statements,
@@ -390,7 +397,7 @@ impl Interpreter {
                     &self.environment,
                 ))),
             ),
-            _ => println!("None!"),
+            _ => Ok(()),
         }
     }
     // TODO fix this
@@ -408,14 +415,28 @@ impl Interpreter {
         }
     }
 
-    pub fn execute_block(&mut self, statements: Vec<Stmt>, env: Rc<RefCell<Environment>>) {
+    fn interpret_block_stmts(&mut self, statements: Vec<Stmt>) -> Result<(), Error> {
+        for statement in statements {
+            self.interpret_stmt(statement)?
+        }
+        Ok(())
+    }
+
+    pub fn execute_block(
+        &mut self,
+        statements: Vec<Stmt>,
+        env: Rc<RefCell<Environment>>,
+    ) -> Result<(), Error> {
         //Store previous environment
         let previous = self.environment.clone();
-        self.environment = env;
         // Check environment
-        self.interpret_stmts(statements);
+        self.environment = env;
+
+        let result = self.interpret_block_stmts(statements);
+        //self.interpret_stmts(statements);
         //Set the environment back to previous one.
         self.environment = previous;
+        result
     }
 
     fn visit_var_expr(&self, expr: Expr) -> Result<Object, RuntimeError> {
@@ -441,7 +462,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_if_stmt(&mut self, stmt: Stmt) {
+    fn visit_if_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         match stmt {
             Stmt::IfStmt {
                 condition,
@@ -450,16 +471,19 @@ impl Interpreter {
             } => match self.interpret(condition) {
                 Ok(obj) => {
                     if self.is_truthy(obj) {
-                        self.interpret_stmt(*thenBranch);
-                    } else {
-                        self.interpret_stmt(*elseBranch.unwrap());
+                        return self.interpret_stmt(*thenBranch);
                     }
+                    if elseBranch.is_some() {
+                        return self.interpret_stmt(*elseBranch.unwrap());
+                    }
+                    Ok(())
                 }
                 Err(e) => {
-                    println!("Error: {:?}", e)
+                    println!("Error: {:?}", e);
+                    Ok(())
                 }
             },
-            _ => println!("None!"),
+            _ => Ok(()),
         }
     }
 }

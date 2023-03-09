@@ -82,9 +82,9 @@ impl Parser {
         self.consume(
             TokenType::LeftParen,
             format!("Expect '(' after {} name.", kind),
-        );
+        )?;
         let mut parameters: Vec<Token> = Vec::new();
-        if (!matches!(self, TokenType::RightParen)) {
+        if !matches!(self, TokenType::RightParen) {
             loop {
                 if parameters.len() >= 255 {
                     return Err(ParserError {
@@ -96,11 +96,10 @@ impl Parser {
                     self.consume(TokenType::Identifier, "Expect parameter name.".to_string())?,
                 );
 
-                if (!matches!(self, TokenType::Comma)) {
+                if !matches!(self, TokenType::Comma) {
                     break;
                 }
             }
-            print!("{}", self.peek());
         }
         self.consume(
             TokenType::RightParen,
@@ -271,7 +270,6 @@ impl Parser {
         )?;
 
         let condition = self.expression()?;
-        println!("condition while stmt {}", condition);
 
         self.consume(
             TokenType::RightParen,
@@ -319,8 +317,8 @@ impl Parser {
     }
 
     fn return_statement(&mut self) -> Result<Stmt, ParserError> {
-        let keyword = self.previous();
-        let value = if (matches!(self, TokenType::Semicolon)) {
+        let keyword = self.previous().clone();
+        let value = if !matches!(self, TokenType::Semicolon) {
             Some(self.expression()?)
         } else {
             None

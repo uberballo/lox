@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use crate::error::RuntimeError;
+use crate::error::{Error, RuntimeError};
 use crate::expr::Stmt;
 use crate::token::Token;
 
@@ -20,6 +20,7 @@ pub enum LoxFunc {
         name: Token,
         params: Vec<Token>,
         body: Vec<Stmt>,
+        closure: Rc<RefCell<Environment>>,
     },
 }
 
@@ -31,16 +32,25 @@ impl LoxFunc {
     ) -> Result<Object, RuntimeError> {
         match self {
             LoxFunc::Callable { func, .. } => Ok(func(arguments)),
-            LoxFunc::Function { params, body, .. } => {
-                let mut environment = Rc::new(RefCell::new(Environment::new()));
+            LoxFunc::Function {
+                params,
+                body,
+                closure,
+                ..
+            } => {
+                let mut environment =
+                    Rc::new(RefCell::new(Environment::new_with_enclosing(closure)));
                 for (param, arg) in params.iter().zip(arguments.iter()) {
                     environment
                         .borrow_mut()
                         .define(param.lexeme.clone(), arg.clone());
                 }
                 // TODO https://craftinginterpreters.com/functions.html#returning-from-calls
-                interpreter.execute_block(body.clone(), environment);
-                return Ok(Object::Nil);
+                match interpreter.execute_block(body.clone(), environment) {
+                    Ok(()) => Ok(Object::Nil),
+                    Err(Error::ReturnError { value }) => Ok(value),
+                    _ => Ok(Object::Nil),
+                }
             }
         }
     }
