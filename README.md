@@ -2,6 +2,10 @@
 
 Interpreter wrote with the guidance of [Crafting interpreter](https://craftinginterpreters.com/). One of the new projects.
 
+## Warning  
+
+This needs a real cleanup. 
+
 ## How to use  
 
 Have [Rust](https://www.rust-lang.org/tools/install) installed.  
