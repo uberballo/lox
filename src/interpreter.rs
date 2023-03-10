@@ -330,7 +330,6 @@ impl Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: Stmt) {
-        println!("VISIT FUNCTION");
         match stmt {
             Stmt::Function { name, params, body } => {
                 let function = LoxFunc::Function {

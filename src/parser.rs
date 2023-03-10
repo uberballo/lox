@@ -84,7 +84,7 @@ impl Parser {
             format!("Expect '(' after {} name.", kind),
         )?;
         let mut parameters: Vec<Token> = Vec::new();
-        if !matches!(self, TokenType::RightParen) {
+        if !self.check(TokenType::RightParen) {
             loop {
                 if parameters.len() >= 255 {
                     return Err(ParserError {
@@ -334,11 +334,11 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
         let value = self.expression();
         match value {
-            Err(_err) => {
+            Err(err) => {
                 return Err(ParserError {
                     token_type: self.peek().token_type,
-                    message: "error".to_string(),
-                })
+                    message: err.message,
+                });
             }
             Ok(expr) => {
                 self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
@@ -350,7 +350,7 @@ impl Parser {
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {
         let mut statements: Vec<Stmt> = Vec::new();
 
-        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+        while !self.check(TokenType::RightBrace) {
             let stmt = self.declaration()?;
             statements.push(stmt);
         }
@@ -448,7 +448,7 @@ impl Parser {
 
     fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParserError> {
         let mut arguments: Vec<Expr> = Vec::new();
-        if !matches!(self, TokenType::RightParen) {
+        if !self.check(TokenType::RightParen) {
             loop {
                 if arguments.len() >= 255 {
                     return Err(ParserError {
