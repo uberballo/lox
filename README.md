@@ -30,5 +30,6 @@ More technical debt.
 - [x] Evaluating Expressions
 - [x] Statements and State
 - [x] Control flow
-- [ ] Functions
+- [x] Functions
+- [ ] Resolving and binding
 
