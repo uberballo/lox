@@ -45,7 +45,7 @@ impl LoxFunc {
                         .borrow_mut()
                         .define(param.lexeme.clone(), arg.clone());
                 }
-                // TODO https://craftinginterpreters.com/functions.html#returning-from-calls
+
                 match interpreter.execute_block(body.clone(), environment) {
                     Ok(()) => Ok(Object::Nil),
                     Err(Error::ReturnError { value }) => Ok(value),

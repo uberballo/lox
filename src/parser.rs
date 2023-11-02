@@ -7,7 +7,6 @@ pub struct Parser {
     current: usize,
 }
 
-// Match is reserved
 macro_rules! matches {
     ($s:ident, $( $x: expr),* ) => {
         {
@@ -26,7 +25,7 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    //pub fn parse(&mut self) -> Result<Expr, ParserError> {
+    // TODO catch ParseEerror return null
     pub fn parse(&mut self) -> Vec<Stmt> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
@@ -35,9 +34,7 @@ impl Parser {
                 Err(err) => println!("{:?}", err),
             }
         }
-        //return self.expression();
         return statements;
-        // catch ParseEerror return null
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParserError> {

@@ -15,13 +15,6 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    //pub fn visit_grouping_expr(expr: Expr) {
-    //    self.evaluate(expr.expression)
-    //}
-
-    //fn evaluate(expr Expr) -> object {
-    //    return expr.accept(this)
-    //}
     pub fn new() -> Interpreter {
         Interpreter {
             globals: Rc::new(RefCell::new(Environment::new())),
@@ -82,7 +75,6 @@ impl Interpreter {
                 right: _,
             } => Ok(self.visit_unary_expr(expr)),
             Expr::Literal { literal_value: _ } => Ok(self.visit_literal_expr(expr)),
-            //TODO remove unwrap
             Expr::Variable { token: _ } => self.visit_var_expr(expr),
             Expr::Assign { name: _, value: _ } => self.visit_assign_expr(expr),
             Expr::Logical {
@@ -116,10 +108,6 @@ impl Interpreter {
             _ => true,
         }
     }
-
-    //public Object visitLiteralExpr(Expr.Literal expr) {
-    //    return expr.value;
-    //  }
 
     fn literal_to_object(&self, literal_value: LiteralValue) -> Object {
         match literal_value {
@@ -171,7 +159,6 @@ impl Interpreter {
 
     fn is_equal(&self, a: Object, b: Object) -> bool {
         match (a, b) {
-            //TODO only number and String comparison
             (Object::Number(a), Object::Number(b)) => a == b,
             (Object::String(a), Object::String(b)) => a == b,
             (Object::Nil, Object::Nil) => true,
@@ -246,7 +233,6 @@ impl Interpreter {
                     TokenType::EqualEqual => {
                         return Ok(Object::Boolean(self.is_equal(left_value, right_value)));
                     }
-                    //TODO No string + string yet.
                     _ => return Ok(Object::Nil),
                 }
             }
@@ -274,7 +260,6 @@ impl Interpreter {
                 match calleeValue {
                     Object::Call(callable) => {
                         let agruments_len = args.len();
-                        // TODO Should return runtimeError
                         if callable.arity() != agruments_len {
                             return Err(RuntimeError {
                                 token: paren,
@@ -399,7 +384,7 @@ impl Interpreter {
             _ => Ok(()),
         }
     }
-    // TODO fix this
+
     fn visit_while_stmt(&mut self, stmt: Stmt) {
         match stmt {
             Stmt::WhileStmt { condition, body } => {
@@ -432,7 +417,6 @@ impl Interpreter {
         self.environment = env;
 
         let result = self.interpret_block_stmts(statements);
-        //self.interpret_stmts(statements);
         //Set the environment back to previous one.
         self.environment = previous;
         result
@@ -479,7 +463,10 @@ impl Interpreter {
                 }
                 Err(e) => {
                     println!("Error: {:?}", e);
-                    Ok(())
+                    Err(Error::RuntimeError {
+                        token: e.token,
+                        message: e.message,
+                    })
                 }
             },
             _ => Ok(()),

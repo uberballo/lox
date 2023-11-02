@@ -23,7 +23,7 @@ pub enum Error {
 pub struct ReturnError {
     pub value: Object,
 }
-
+// TODO Errors are still in a bad shape.
 fn error(line: u32, message: String) {
     report(line, "".to_string(), message);
 }

@@ -15,7 +15,6 @@ mod token;
 
 fn main() {
     let mut pattern = std::env::args();
-    //let environment = environment::Environment::new();
     let interpreter = interpreter::Interpreter::new();
     let mut lox = Lox { interpreter };
 
@@ -59,21 +58,10 @@ impl Lox {
     }
 
     fn run(&mut self, source: String) {
-        //scanner
         let mut scanner = scanner::Scanner::new(source);
         let mut tokens = scanner.scan_tokens();
-        println!();
-        for tk in &mut tokens {
-            //println!("{:?}", tk);
-        }
-        println!();
         let mut parser = parser::Parser::new(tokens);
         let mut statements = parser.parse();
-        println!();
-        for st in &mut statements {
-            //println!("{:?}", st);
-        }
-        println!();
         self.interpreter.interpret_stmts(statements);
     }
 }
