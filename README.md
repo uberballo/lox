@@ -24,9 +24,11 @@ With a file pass the path as the argument:
 * `test6.lox Fibonacci (My favorite).`  
 * `test7.lox Assigning functions to variables.`  
 
-## Notes  
-The `interpreter.rs` and `main.rs` error handling is unfinished.  
-More technical debt.
+## TODO
+There are still few chapters to be done and some TODO's here and there.  
+- [ ] Code generation.  
+- [ ] Tests.   
+- [ ] Fix errors that come from the `.lox` files.  
 
 ## Chapters  
 - [x] Scanning
