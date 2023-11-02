@@ -122,7 +122,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
-        let mut expr: Expr = self.or()?;
+        let expr: Expr = self.or()?;
 
         while matches!(self, TokenType::Equal) {
             let equals = self.previous();
@@ -164,7 +164,7 @@ impl Parser {
     fn and(&mut self) -> Result<Expr, ParserError> {
         let mut expr: Expr = self.equality()?;
 
-        while (matches!(self, TokenType::And)) {
+        while matches!(self, TokenType::And) {
             let operator = self.previous();
             let right = self.equality()?;
             expr = Expr::Logical {
@@ -294,8 +294,8 @@ impl Parser {
 
                 return Ok(Stmt::IfStmt {
                     condition: expr,
-                    thenBranch: Box::new(then_branch),
-                    elseBranch: else_branch,
+                    then_branch: Box::new(then_branch),
+                    else_branch: else_branch,
                 });
             }
         }

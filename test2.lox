@@ -9,7 +9,6 @@ if (10>2) {
     } else {
     print "wee";
 };
-
 var a = 5;
 if (10>2) {
     a = 10;
@@ -17,6 +16,5 @@ if (10>2) {
     a = 20;
 };
 print a;
-
 print "hi" or 2;
 print nil or "yes";

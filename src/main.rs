@@ -1,7 +1,5 @@
-use std::cell::RefCell;
 use std::fs;
 use std::io;
-use std::rc::Rc;
 
 mod callable;
 mod environment;
@@ -59,9 +57,9 @@ impl Lox {
 
     fn run(&mut self, source: String) {
         let mut scanner = scanner::Scanner::new(source);
-        let mut tokens = scanner.scan_tokens();
+        let tokens = scanner.scan_tokens();
         let mut parser = parser::Parser::new(tokens);
-        let mut statements = parser.parse();
+        let statements = parser.parse();
         self.interpreter.interpret_stmts(statements);
     }
 }

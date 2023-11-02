@@ -38,8 +38,7 @@ impl LoxFunc {
                 closure,
                 ..
             } => {
-                let mut environment =
-                    Rc::new(RefCell::new(Environment::new_with_enclosing(closure)));
+                let environment = Rc::new(RefCell::new(Environment::new_with_enclosing(closure)));
                 for (param, arg) in params.iter().zip(arguments.iter()) {
                     environment
                         .borrow_mut()
@@ -68,7 +67,6 @@ impl<'a> fmt::Display for LoxFunc {
         match self {
             LoxFunc::Callable { .. } => write!(f, "Callable"),
             LoxFunc::Function { name, .. } => write!(f, "<fn {}>", name),
-            _ => write!(f, "Nil"),
         }
     }
 }

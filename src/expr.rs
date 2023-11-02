@@ -61,8 +61,8 @@ pub struct Var {
 #[derive(Debug, Clone)]
 pub struct IfStmt {
     pub condition: Box<Expr>,
-    pub thenBranch: Box<Stmt>,
-    pub elseBranch: Option<Box<Stmt>>,
+    pub then_branch: Box<Stmt>,
+    pub else_branch: Option<Box<Stmt>>,
 }
 
 #[derive(Debug, Clone)]
@@ -92,8 +92,8 @@ pub enum Stmt {
     },
     IfStmt {
         condition: Expr,
-        thenBranch: Box<Stmt>,
-        elseBranch: Option<Box<Stmt>>,
+        then_branch: Box<Stmt>,
+        else_branch: Option<Box<Stmt>>,
     },
     WhileStmt {
         condition: Expr,

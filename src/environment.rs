@@ -31,6 +31,7 @@ impl Environment {
         self.values.insert(name, value);
     }
 
+    #[allow(dead_code)]
     pub fn debug_print(&self) {
         println!("Debug print {:?}", self.values);
         if self.enclosing.is_some() {

@@ -1,11 +1,11 @@
-use crate::callable::{self, LoxFunc};
+use crate::callable::LoxFunc;
 pub use crate::environment::Environment;
+use crate::error::Error;
 pub use crate::error::RuntimeError;
-use crate::error::{Error, ReturnError};
 pub use crate::expr::{Expr, LiteralValue, Stmt};
 pub use crate::object::Object;
 pub use crate::token::{Token, TokenType};
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -21,6 +21,8 @@ impl Interpreter {
             environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
+
+    #[allow(dead_code)]
     fn get_clock() -> Object {
         let clock = Object::Call(LoxFunc::Callable {
             arity: 0,
@@ -41,25 +43,21 @@ impl Interpreter {
         match stmt {
             Stmt::Expression { .. } => self.visit_expression_stmt(stmt),
             Stmt::Print { .. } => self.visit_print_stmt(stmt),
-            Stmt::Return { .. } => {
-                // TODO Fix this bubblegum
-                self.visit_return_stmt(stmt)?;
-            }
+            Stmt::Return { .. } => self.visit_return_stmt(stmt)?,
             Stmt::Var { .. } => self.visit_var_stmt(stmt),
             Stmt::Block { .. } => self.visit_block_stmt(stmt)?,
             Stmt::IfStmt { .. } => self.visit_if_stmt(stmt)?,
-            Stmt::WhileStmt { .. } => self.visit_while_stmt(stmt),
+            Stmt::WhileStmt { .. } => self.visit_while_stmt(stmt)?,
             Stmt::Function { .. } => self.visit_function_stmt(stmt),
-
-            _ => println!("Invalid statement"),
         }
         return Ok(());
     }
 
     pub fn interpret_stmts(&mut self, statements: Vec<Stmt>) {
         for stmt in statements.into_iter() {
-            //TODO This is really stupid. Add the enum
-            self.interpret_stmt(stmt);
+            if let Err(err) = self.interpret_stmt(stmt) {
+                panic!("{}", err)
+            }
         }
     }
 
@@ -130,9 +128,9 @@ impl Interpreter {
     fn visit_logical_expr(&mut self, expr: Expr) -> Object {
         match expr {
             Expr::Logical {
-                left: left,
-                operator: operator,
-                right: right,
+                left,
+                operator,
+                right,
             } => {
                 let left_object = self.interpret(*left).unwrap().clone();
                 if operator.token_type == TokenType::Or {
@@ -247,17 +245,17 @@ impl Interpreter {
                 paren,
                 arguments,
             } => {
-                let calleeValue = self.interpret(*callee)?;
+                let callee_value = self.interpret(*callee)?;
 
-                let argumentObjects: Result<Vec<Object>, RuntimeError> = arguments
+                let argument_objects: Result<Vec<Object>, RuntimeError> = arguments
                     .into_iter()
                     .map(|x| self.interpret(x))
                     .collect::<Result<Vec<Object>, RuntimeError>>();
 
-                let args = argumentObjects?;
+                let args = argument_objects?;
 
                 // TODO check this
-                match calleeValue {
+                match callee_value {
                     Object::Call(callable) => {
                         let agruments_len = args.len();
                         if callable.arity() != agruments_len {
@@ -385,15 +383,16 @@ impl Interpreter {
         }
     }
 
-    fn visit_while_stmt(&mut self, stmt: Stmt) {
+    fn visit_while_stmt(&mut self, stmt: Stmt) -> Result<(), Error> {
         match stmt {
             Stmt::WhileStmt { condition, body } => {
                 let condition = condition.clone();
                 let mut value = self.interpret(condition.clone()).unwrap();
                 while self.is_truthy_2(&value) {
-                    self.interpret_stmt(*body.clone());
-                    value = self.interpret(condition.clone()).unwrap();
+                    self.interpret_stmt(*body.clone())?;
+                    value = self.interpret(condition.clone())?;
                 }
+                Ok(())
             }
             _ => unreachable!(),
         }
@@ -449,24 +448,21 @@ impl Interpreter {
         match stmt {
             Stmt::IfStmt {
                 condition,
-                thenBranch,
-                elseBranch,
+                then_branch,
+                else_branch,
             } => match self.interpret(condition) {
                 Ok(obj) => {
                     if self.is_truthy(obj) {
-                        return self.interpret_stmt(*thenBranch);
+                        return self.interpret_stmt(*then_branch);
                     }
-                    if elseBranch.is_some() {
-                        return self.interpret_stmt(*elseBranch.unwrap());
+                    if else_branch.is_some() {
+                        return self.interpret_stmt(*else_branch.unwrap());
                     }
                     Ok(())
                 }
                 Err(e) => {
                     println!("Error: {:?}", e);
-                    Err(Error::RuntimeError {
-                        token: e.token,
-                        message: e.message,
-                    })
+                    Err(e.into())
                 }
             },
             _ => Ok(()),
