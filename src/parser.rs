@@ -503,7 +503,7 @@ impl Parser {
                 self.advance();
                 return Err(ParserError {
                     token_type: self.peek().token_type,
-                    message: "Expected valid expression".to_string(),
+                    message: format!("Expected valid expression at position {}", self.current),
                 });
             }
         };
