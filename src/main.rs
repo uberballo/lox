@@ -19,7 +19,9 @@ fn main() {
     match pattern.len() {
         1 => lox.run_prompt(),
         2 => lox.run_file(pattern.nth(1).clone().expect("error")),
-        _ => println!("Invalid arguments"),
+        _ => println!(
+            "Invalid arguments. Run without arguments for REPL or pass a path to a .lox file"
+        ),
     }
 }
 struct Lox {

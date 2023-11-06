@@ -5,7 +5,7 @@ pub use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
 pub struct ParserError {
-    pub token_type: TokenType,
+    pub token: Token,
     pub message: String,
 }
 

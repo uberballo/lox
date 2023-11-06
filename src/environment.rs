@@ -48,7 +48,7 @@ impl Environment {
             None => {
                 return Err(RuntimeError {
                     token,
-                    message: "Undefined variable".to_string(),
+                    message: "Undefined variable. Not found in enclosing.".to_string(),
                 })
             }
         }
@@ -63,7 +63,7 @@ impl Environment {
                 } else {
                     return Err(RuntimeError {
                         token,
-                        message: "Undefined variable".to_string(),
+                        message: "Undefined variable. No enclosing found.".to_string(),
                     });
                 }
             }
@@ -86,7 +86,7 @@ impl Environment {
 
         return Err(RuntimeError {
             token,
-            message: "Undefined variable".to_string(),
+            message: "Undefined variable. Could not assign.".to_string(),
         });
     }
 }

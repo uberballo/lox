@@ -257,8 +257,8 @@ impl Interpreter {
                 // TODO check this
                 match callee_value {
                     Object::Call(callable) => {
-                        let agruments_len = args.len();
-                        if callable.arity() != agruments_len {
+                        let arguments_len = args.len();
+                        if callable.arity() != arguments_len {
                             return Err(RuntimeError {
                                 token: paren,
                                 message: "Something went wrong with the callable".to_string(),

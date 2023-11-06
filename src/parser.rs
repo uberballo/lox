@@ -50,23 +50,20 @@ impl Parser {
     fn var_declaration(&mut self) -> Result<Stmt, ParserError> {
         let name = self.consume(TokenType::Identifier, "Expect variable name.".to_string())?;
 
-        if matches!(self, TokenType::Equal) {
-            match self.expression() {
-                Err(err) => return Err(err),
-                Ok(expr) => {
-                    self.consume(TokenType::Semicolon, "Expect variable name.".to_string())?;
-                    return Ok(Stmt::Var {
-                        name: name,
-                        initializer: Some(expr),
-                    });
-                }
-            }
+        let value = if matches!(self, TokenType::Equal) {
+            Some(self.expression()?)
+        } else {
+            None
         };
-        self.synchronize();
-        //TODO should return null
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.".to_string(),
+        )?;
+
         return Ok(Stmt::Var {
             name: name,
-            initializer: None,
+            initializer: value,
         });
     }
 
@@ -85,7 +82,7 @@ impl Parser {
             loop {
                 if parameters.len() >= 255 {
                     return Err(ParserError {
-                        token_type: self.peek().token_type,
+                        token: self.peek(),
                         message: "Can't have more than 255 parameters".to_string(),
                     });
                 }
@@ -109,16 +106,30 @@ impl Parser {
         )?;
         // TODO fix this into something prettier. Block_statement could return a
         // vector
-        let body = match self.block_statement()? {
-            Stmt::Block { statements } => statements,
-            _ => Vec::new(),
-        };
+        if let Stmt::Block { statements } = self.block_statement()? {
+            return Ok(Stmt::Function {
+                name,
+                params: parameters,
+                body: statements,
+            });
+        } else {
+            Err(ParserError {
+                token: self.peek(),
+                message: "Unexpected error caling function".to_string(),
+            })
+        }
+        //let block = self.block_statement()?;
+        //        let body = match self.block_statement()? {
+        //            Stmt::Block { statements } => statements,
+        //            _ => Vec::new(),
+        //        };
 
-        return Ok(Stmt::Function {
-            name,
-            params: parameters,
-            body: body,
-        });
+        //if let Stmt::Block(body) = self.block_statement()? {
+        //    Ok(Stmt::Function(name, parameters, body))
+        //} else {
+        //    // unreachable code, needed to make the compiler happy
+        //    Err(ParseError::UnexpectedError)
+        //}
     }
 
     fn assignment(&mut self) -> Result<Expr, ParserError> {
@@ -127,7 +138,6 @@ impl Parser {
         while matches!(self, TokenType::Equal) {
             let equals = self.previous();
             let value = self.assignment()?;
-
             match expr {
                 Expr::Variable { token } => {
                     return Ok(Expr::Assign {
@@ -137,7 +147,7 @@ impl Parser {
                 }
                 _ => {
                     return Err(ParserError {
-                        token_type: equals.token_type,
+                        token: equals,
                         message: "Invalid assignment target".to_string(),
                     });
                 }
@@ -302,15 +312,10 @@ impl Parser {
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
-        let value = self.expression();
-        match value {
-            Err(err) => return Err(err),
-            Ok(expr) => {
-                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
 
-                return Ok(Stmt::Print { expr });
-            }
-        }
+        return Ok(Stmt::Print { expr });
     }
 
     fn return_statement(&mut self) -> Result<Stmt, ParserError> {
@@ -329,19 +334,9 @@ impl Parser {
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, ParserError> {
-        let value = self.expression();
-        match value {
-            Err(err) => {
-                return Err(ParserError {
-                    token_type: self.peek().token_type,
-                    message: err.message,
-                });
-            }
-            Ok(expr) => {
-                self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
-                return Ok(Stmt::Expression { expr });
-            }
-        }
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.".to_string())?;
+        return Ok(Stmt::Expression { expr });
     }
 
     fn block_statement(&mut self) -> Result<Stmt, ParserError> {
@@ -449,7 +444,7 @@ impl Parser {
             loop {
                 if arguments.len() >= 255 {
                     return Err(ParserError {
-                        token_type: self.peek().token_type,
+                        token: self.peek(),
                         message: "Can't have more than 255 arguments".to_string(),
                     });
                 }
@@ -502,8 +497,12 @@ impl Parser {
             _ => {
                 self.advance();
                 return Err(ParserError {
-                    token_type: self.peek().token_type,
-                    message: format!("Expected valid expression at position {}", self.current),
+                    token: self.previous(),
+                    message: format!(
+                        "Expected valid expression at position {}, Current: {}",
+                        self.current,
+                        self.peek(),
+                    ),
                 });
             }
         };
@@ -542,33 +541,12 @@ impl Parser {
 
     fn consume(&mut self, token_type: TokenType, message: String) -> Result<Token, ParserError> {
         if self.check(token_type) {
-            return Ok(self.advance().clone());
+            return Ok(self.advance());
         } else {
             return Err(ParserError {
-                token_type: self.peek().token_type,
+                token: self.peek(),
                 message,
             });
-        }
-    }
-
-    fn synchronize(&mut self) {
-        self.advance();
-
-        while !self.is_at_end() {
-            if self.previous().token_type == TokenType::Semicolon {
-                return;
-            }
-            match self.peek().token_type {
-                TokenType::Class
-                | TokenType::Fun
-                | TokenType::Var
-                | TokenType::For
-                | TokenType::If
-                | TokenType::While
-                | TokenType::Print
-                | TokenType::Return => return,
-                _ => self.advance(),
-            };
         }
     }
 }

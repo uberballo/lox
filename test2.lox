@@ -1,20 +1,21 @@
 print 10>2;
 if (10<2) {
-    print "hello";
+    print "Wrong";
     } else {
-    print "wee";
-};
+    print "Correct";
+}
 if (10>2) {
-    print "hello";
+    print "Correct second";
     } else {
-    print "wee";
-};
+    print "Wrong";
+}
 var a = 5;
 if (10>2) {
     a = 10;
     } else {
     a = 20;
-};
+}
+print "10 is correct";
 print a;
-print "hi" or 2;
-print nil or "yes";
+print "Correct oneliner" or 2;
+print nil or "Correct again";

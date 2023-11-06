@@ -17,18 +17,19 @@ With a file pass the path as the argument:
 
 ### List of tests  
 * `test1.lox Assign values to variables and handle scopes.`  
-* `test2.lox Handle if-cases. *Contains errors, still works*`  
+* `test2.lox Handle if-cases.`  
 * `test3.lox For-loops.`  
-* `test4.lox While-loops. *contains errors, still works*`  
+* `test4.lox While-loops.`  
 * `test5.lox Functions.`  
 * `test6.lox Fibonacci (My favorite).`  
 * `test7.lox Assigning functions to variables.`  
 
 ## TODO
-There are still few chapters to be done and some TODO's here and there.  
+There are still few chapters to be done and some TODO's here and there.
+- [ ] Improve `Interpreter.rs` error handling. Currently it's quite bad.    
 - [ ] Code generation.  
 - [ ] Tests.   
-- [ ] Fix errors that come from the `.lox` files.  
+- [x] Fix errors that come from the `.lox` files.  
 
 ## Chapters  
 - [x] Scanning
